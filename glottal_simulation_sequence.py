@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     infile = args.param_file
 
-
+    timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
     if not args.output:
         args.output = timestamp+'.hdf5'
 
