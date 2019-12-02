@@ -99,21 +99,13 @@
             "description": "opening mouth",
             "elements": [
                 {},
-                {
-                    "radius": {
-                        "_range": {
-                            "start": 0.01,
-                            "end": 0.02,
-                            "step": 0.005
-                        }
-                    }
-                },
+                {},
                 {
                     "radius": {
                         "_range": {
                             "start": 0.002,
                             "end": 0.02,
-                            "step": 0.005
+                            "step": 0.002
                         }
                     }
                 }
