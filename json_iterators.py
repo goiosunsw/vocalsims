@@ -75,8 +75,11 @@ def set_json_path(js, path, val):
             el.append({})
             el = el[p1]
                 
-    el[path[-1]] = val
-        
+    try:
+        el[path[-1]] = val
+    except IndexError:
+        for ii in range(len(el),path[-1]):
+            el.append({})
 
 def json_pop_path(jsource,path):
     jtarget = {}
@@ -160,7 +163,8 @@ if __name__ == '__main__':
     with open(sys.argv[1]) as f:
         jj = json.load(f)
         #js = {'glottis':{'lf coefficients':{'rg':2}}}
-        js = jj['sequence']
+        # js = jj['sequence']
+        jt, js = json_pop_path(jj,'sequence')
 
     print(json.dumps(json_replacer(jj,js),indent=2))
 #    for p,v in tree_path_iterate(jj):
