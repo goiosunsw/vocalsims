@@ -11,7 +11,7 @@ from pypevoc import PV
 import pympedance.Synthesiser as psyn
 import TimeDomainTubes as tdt
 
-from .glottal_simulation_functional import VocalSimulation
+from glottal_simulation_functional import VocalSimulation
 import json_iterators as jsi
 
 from tqdm import trange as trange
@@ -30,7 +30,6 @@ if __name__ == '__main__':
 
     infile = args.param_file
 
-    timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
 
     if not args.output:
         args.output = timestamp+'.hdf5'
@@ -38,18 +37,22 @@ if __name__ == '__main__':
     output = args.output
 
     sim = VocalSimulation()
-    sim.set_output_hdf5(output)
-    js = json.read(infile)
+    with open(infile) as f:
+        js = json.load(f)
     try:
         jseq = js['sequence']
         print('Sequence found')
-    else:
+    except KeyError:
         jseq = None
     
     if jseq:
-        
-    sim.read_json_conifg(infile)
-    sim.simulate()
+        for jj in jsi.json_expander(js, jseq):
+            print(jj)
+            sim.reset()
+            timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+            sim.set_hdf5_path(output,timestamp)
+            sim.from_json(jj)
+            sim.simulate()
 
 
     if args.plot:
