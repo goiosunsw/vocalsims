@@ -42,6 +42,13 @@ class VocalSimulation(object):
         self.samp_no = 0
         self.callback_every = -1
         self.sol_eps = 1e-10;
+        self.init_time = datetime.now().strftime('%Y%m%d-%H%M%S')
+
+    def reset(self):
+        self.samp_no = 0
+        self.last_callback = 0
+        for tract in self.tracts.values():
+            tract.reset() 
 
     def set_tract(self, id, tract):
         radii = tract.radii
@@ -141,7 +148,9 @@ class VocalSimulation(object):
     def set_hdf5_path(self, hdf5_file, group_path):
         self.hdf5_file = hdf5_file
         self.hdf5_path = group_path
-        
+        with h5py.File(hdf5_file, 'a') as f:
+            g = f.create_group(self.hdf5_path)
+       
 
     def tract_data_to_hdf5(self, id):
         tforesp, tfiresp, impresp = self.impulse_response(id)
@@ -156,8 +165,10 @@ class VocalSimulation(object):
     def init_hdf5(self):
         hdf5_file = self.hdf5_file
         ## Write preliminary data
-        with h5py.File(hdf5_file, 'w') as f:
-            g = f.create_group(self.hdf5_path)
+        with h5py.File(hdf5_file, 'a') as f:
+            f.attrs['last_simulation_created'] = self.init_time
+            #g = f.create_group(self.hdf5_path)
+            g = f[self.hdf5_path]
             g.attrs['start_time'] = self.timestamp
             g.attrs['param_json'] = json.dumps(self.json)
             g.attrs['code_version'] = __simulation_version__
@@ -278,9 +289,10 @@ class VocalSimulation(object):
         
     def hdf5_finish(self):
         self.hdf5_callback(self.last_callback, self.samp_no)
-        with h5py.File(output, 'a') as f:
-            g = f[timestamp]
+        with h5py.File(self.hdf5_file, 'a') as f:
+            g = f[self.hdf5_path]
             g.attrs['end_time'] = datetime.now().strftime('%Y%m%d-%H%M%S')
+            self.glottis_data_to_hdf5()
 
     def func(self, x, args):
         p_lung, p_in, a = args
