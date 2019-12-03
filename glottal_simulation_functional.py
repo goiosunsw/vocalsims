@@ -55,6 +55,7 @@ class VocalSimulation(object):
         zc = self.rho*self.c/radii[0]**2/np.pi
         self.tracts[id] = tract
         self.char_impedances[id] = zc
+        self.tract_data_to_hdf5(id)
 
     def tract_from_json(self, jd):
         lengths = []
@@ -217,7 +218,7 @@ class VocalSimulation(object):
         lf_max = lf(lf.tp)
 
         lrect = jg['rectangular slot']
-        a_max = jg['maximum_aperture']
+        a_max = jg['maximum aperture']
 
         glot_area = lambda x: lf(x)/lf_max*a_max 
         phvec = np.cumsum(self.fvec/self.sr)
