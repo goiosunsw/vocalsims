@@ -27,51 +27,55 @@
         "frequency dependent losses": true,
         "subglottal tract enabled": true
     },
-    "supraglottal": {
-        "description": "simple 3 pipe assembly",
-        "frequency independent losses": 0.02,
-        "elements": [{
-                "type": "cylinder",
-                "length": 0.02,
-                "radius": 0.003,
-                "loss_multiplier": 5
-            },
-            {
-                "type": "cylinder",
-                "length": 0.10,
-                "radius": 0.012,
-                "loss_multiplier": 5
-            },
-            {
-                "type": "cylinder",
-                "length": 0.05,
-                "radius": 0.005,
-                "loss_multiplier": 5
-            },
-            {
-                "type": "termination",
-                "kind": "open"
-            }
-        ]
-    },
-    "subglottal": {
-        "description": "1 cylinder trachea",
-        "frequency independent losses": 0.04,
-        "elements": [{
-                "type": "cylinder",
-                "length": 0.15,
-                "radius": 0.01,
-                "loss_multiplier": 5
-            },
-            {
-                "type": "termination",
-                "kind": "open"
-            }
-        ]
+    "tracts": {
+        "supraglottal": {
+            "description": "simple 3 pipe assembly",
+            "frequency independent losses": 0.02,
+            "elements": [
+                {
+                    "type": "cylinder",
+                    "length": 0.02,
+                    "radius": 0.003,
+                    "loss_multiplier": 5
+                },
+                {
+                    "type": "cylinder",
+                    "length": 0.10,
+                    "radius": 0.012,
+                    "loss_multiplier": 5
+                },
+                {
+                    "type": "cylinder",
+                    "length": 0.05,
+                    "radius": 0.005,
+                    "loss_multiplier": 5
+                },
+                {
+                    "type": "termination",
+                    "kind": "open"
+                }
+            ]
+        },
+        "subglottal": {
+            "description": "1 cylinder trachea",
+            "frequency independent losses": 0.04,
+            "elements": [
+                {
+                    "type": "cylinder",
+                    "length": 0.15,
+                    "radius": 0.01,
+                    "loss_multiplier": 5
+                },
+                {
+                    "type": "termination",
+                    "kind": "open"
+                }
+            ]
+        }
     },
     "glottis": {
         "model": "LF",
-        "maximum_aperture": 0.00001,
+        "maximum aperture": 0.00001,
         "f0": 150,
         "shape coefficient": {
             "value": 0.5,
