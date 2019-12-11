@@ -1,6 +1,6 @@
 from collections import deque
 import numpy as np
-
+from scipy.special import struve, j1
 
 class VTLoss(object):
     """
@@ -99,7 +99,98 @@ class VTLoss(object):
 
         return RealTimeFilter(b=b,a=a)
 
+class RadLoss(object):
+    """
+    Implements a radiation loss calculator 
+    and filter approximation
+    """
+    def __init__(self,radius=.01,speed_of_sound=345.):
+        self.radius = radius
+        self.speed_of_sound = speed_of_sound
+        self.gamma = 1.4
+        self.rho = 1.2
+        self.approx = False
 
+    @property
+    def char_impedance(self):
+        c = self.speed_of_sound
+        return self.rho*c/(self.radius**2*np.pi)
+    
+    def __call__(self,f):
+        """
+        returns the propagation losses:
+
+        this is the ratio to a perfect wave propagation:
+
+        L(f) = exp(1j*k(2*\pi*f)*l)/exp(1j*2*\pi*f/c*l)
+        """
+        c = self.speed_of_sound
+        K = 2*np.pi*f/c
+        ka = K * self.radius
+        # not sure that Z0 should be the parent one...
+        Z0 = self.char_impedance
+
+        if self.approx:
+            zfletch = (((ka)**2/2)**-1+1)**-1 + \
+                       1j*((8*ka/3/np.pi)**-1 + (2/np.pi/ka)**-1)**-1
+        else:
+            zfletch = 1-j1(2*ka)/ka + 1j*struve(1,2*ka)/ka
+
+
+        # Z_flange = Z0*zfletch
+
+        return (zfletch-1)/(1+zfletch)
+
+    def filter_approx(self, sr=1., n_poles=3, n_pts=None, 
+                      fmin=None, fmax=None, weight_const=9., 
+                      inc_real=False, f=None):
+        """
+        Return a LTI filter approximation of the viscothermal losses
+
+        Arguments:
+        sr (float): sampling rate
+        n_poles (int): Numer of poles for vectfit approximation
+        n_pts (int): Number of frequency points at which to calculate the filter
+        f_min (float): Minimum frequency for approximation
+        f_max (maximum frequency for approximation)
+        weight_const (float): weight constant for vectfit fitting in:
+            weights = exp(-weight_const*f/fmax)
+
+        (tested for n_poles = 3, sr=48000, fmin=1., npts=1024)
+        """
+        import vectfit_zd as vfzd 
+        import scipy.signal as sig
+
+        if n_pts is None:
+            n_pts = 1024
+        if fmin is None:
+            fmin = sr/n_pts
+        if f is None:
+            f = np.linspace(fmin,sr/2,n_pts)
+        loss = self(f)
+        fmax = sr
+        fidx = f<fmax
+        #sr = 16000
+
+        s = 1j*2*np.pi*f
+        zvar = np.exp(s/sr)
+        hf=loss
+
+        fnorm = (f/max(f))
+        weights = np.exp(-weight_const*fnorm)
+
+
+        p,r,d,h=vfzd.vectfit_auto(hf[fidx],zvar[fidx],n_poles=n_poles,weights=weights,inc_real=inc_real)
+        hm = vfzd.model(zvar,p,r,d,h)
+
+        b,a = sig.invresz(r,p,[d,h])
+        poles = np.roots(a)
+        zeros = np.roots(b)
+
+        self.b = b
+        self.a = a
+
+        return RealTimeFilter(b=b,a=a)
 
 def simple_relfection_filt(radius=0.01, speed_of_sound=345., sr=1.):
     """
@@ -110,7 +201,7 @@ def simple_relfection_filt(radius=0.01, speed_of_sound=345., sr=1.):
         sr (float): sampling rate
     """
     import scipy.signal as sig
-    f_cutoff = speed_of_sound/2./np.pi/radius
+    f_cutoff = speed_of_sound/1.5/np.pi/radius
     if f_cutoff<sr:
         b,a = sig.butter(1,f_cutoff/sr,btype='high')
     else:
@@ -480,7 +571,8 @@ class RealTimeDuct(object):
         (p_in is the reflected pulse)
     """
     def __init__(self, open=True, lossy=True, 
-                 speed_of_sound=345., sr=48000):
+                 speed_of_sound=345., sr=48000,
+                 simpl_reflection=True):
         self.tubes = []
         if open:
             reflection_coeff = -1
@@ -498,6 +590,7 @@ class RealTimeDuct(object):
         self.speed_of_sound = speed_of_sound
         self.end_out_last = 0.
         self.end_in_last = 0.
+        self.simpl_reflection = simpl_reflection
 
     @property
     def radii(self):
@@ -520,6 +613,12 @@ class RealTimeDuct(object):
         self.tubes.append(new_tube)        
         self.scats.append(self.default_mx)
         self.connect_tubes()
+
+    def adjust_radius(self, radius, index=-1):
+        self.tubes[index].physical_radius = radius
+        self.connect_tubes(index)
+        if index == -1:
+            self.adjust_termination()
 
     def connect_tubes(self,index=-1):
         if index<0:
@@ -583,9 +682,15 @@ class RealTimeDuct(object):
     def adjust_termination(self):
         last_rad = self.tubes[-1].physical_radius
         if self.lossy:
-            self.rfunc = simple_relfection_filt(radius=last_rad,
+            if self.simpl_reflection:
+                self.rlfilt = simple_relfection_filt(radius=last_rad,
                                                 speed_of_sound=self.speed_of_sound,
-                                                sr=self.sr).tick
+                                                sr=self.sr)
+            else:
+                rl = RadLoss(radius=last_rad,
+                             speed_of_sound=self.speed_of_sound)
+                self.rlfilt = rl.filter_approx(sr=self.sr)
+            self.rfunc = self.rlfilt.tick
 
 
     def tick(self, in_smpl):
@@ -666,6 +771,10 @@ class RealTimeDuct(object):
     def reset(self):
         for tube in self.tubes:
             tube.reset()
+        try:
+            self.rlfilt.reset()
+        except AttributeError:
+            print("No radiation filter")
             
     def impulse_response(self,n=1024):
         self.reset()
