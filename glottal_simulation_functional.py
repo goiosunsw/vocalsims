@@ -74,13 +74,11 @@ class VocalSimulation(object):
         ta.adjust_termination()
         return ta, radii
 
-    def from_json(self, jstr):
-        jj = jstr
-        self.json = jj
-        self.desc = jj['description']
+    def from_json(self, json):
+        self.json = json
+        self.desc = json['description']
 
-        jenv = jj['environment']
-        print(json.dumps(jenv,indent=2))
+        jenv = json['environment']
 
         self.p_lung = jenv['lung pressure']
 
@@ -89,12 +87,12 @@ class VocalSimulation(object):
         self.rho = jac['density']
         self.mu = jac['viscosity']
 
-        jsim = jj['simulation']
+        jsim = json['simulation']
         self.sr = jsim['sample rate']
         self.t_max = jsim['duration']
         self.callback_every = jsim['callback every']
 
-        jf0 = jj['glottis']['f0']
+        jf0 = json['glottis']['f0']
         f0bits = []
         try:
             jfb = jf0[0]
@@ -117,13 +115,13 @@ class VocalSimulation(object):
         self.freq_dep_losses = jenv['frequency dependent losses']
 
         ## vocal tract
-        jvt = jj['supraglottal']
-        vt, radii = self.tract_from_json(jvt)
+        jvt = json['tracts']['supraglottal']
+        vt, radii = self.tract_from_json(jvt.to_python())
         self.set_tract('vocal',vt)
 
         # Subglottal tract
-        jsg = jj['subglottal']
-        sg, sg_rad = self.tract_from_json(jsg)
+        jsg = json['tracts']['subglottal']
+        sg, sg_rad = self.tract_from_json(jsg.to_python())
         self.set_tract('subglottal',sg)
 
         # Glottal area
@@ -171,7 +169,7 @@ class VocalSimulation(object):
             #g = f.create_group(self.hdf5_path)
             g = f[self.hdf5_path]
             g.attrs['start_time'] = self.timestamp
-            g.attrs['param_json'] = json.dumps(self.json)
+            g.attrs['param_json'] = (self.json.dumps())
             g.attrs['code_version'] = __simulation_version__
             g.attrs['code type'] = __simulation_type__
 
@@ -370,6 +368,42 @@ class VocalSimulation(object):
             gg['p_vt_in'][idx] = self.p_vt_in[idx]
             gg['p_mth_out'][idx] = self.p_mth_out[idx]
             gg['p_mth_in'][idx] = self.p_mth_in[idx]
+
+            
+class NoInteractionVocalSimulation(VocalSimulation):
+    def simulation_tick(self):
+        samp_no = self.samp_no
+        u0 = np.sqrt(2*self.p_lung/self.rho)
+        a = self.aglot[samp_no];
+        u = a*u0
+        ta = self.tracts['vocal']
+
+        # pressures are read one sample before because new sample has not been inserted
+        p_vt_in_cur = ta.read_next_in_without_tick()
+
+        
+        
+        if self.add_noise:
+            turb = np.random.randn()*u*self.turb_scale
+        else:
+            turb = 0
+        
+        po_vt = self.zc_vt*(u+turb) + p_vt_in_cur;
+            
+        
+        self.u_prev = u
+        _=ta.tick(po_vt)
+        pmth_out = ta.end_out_last
+        pmth_in = ta.end_in_last
+        
+        self.p_vt_out[samp_no] = po_vt
+        self.p_vt_in[samp_no] = p_vt_in_cur
+        
+        self.p_mth_in[samp_no] = ta.end_in_last
+        self.p_mth_out[samp_no] = ta.end_out_last
+        #u_mth[samp_no] = p_mth_in[samp_no] - p_mth_out[samp_no]
+        
+        self.samp_no += 1
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
