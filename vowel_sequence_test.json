@@ -6,6 +6,11 @@
         "duration": 0.1,
         "callback every": 1024
     },
+    "frequency domain": {
+        "start": 1.0,
+        "stop": 10000.0,
+        "n": 10000
+    },
     "environment": {
         "acoustic": {
             "_prefer": true,
@@ -99,21 +104,23 @@
         }
     },
     "sequence": {
-        "supraglottal": {
-            "description": "opening mouth",
-            "elements": [
-                {},
-                {},
-                {
-                    "radius": {
-                        "_range": {
-                            "start": 0.002,
-                            "end": 0.02,
-                            "step": 0.002
+        "tracts": {
+            "supraglottal": {
+                "description": "opening mouth",
+                "elements": [
+                    {},
+                    {},
+                    {
+                        "radius": {
+                            "_range": {
+                                "start": 0.002,
+                                "end": 0.02,
+                                "step": 0.002
+                            }
                         }
                     }
-                }
-            ]
+                ]
+            }
         }
     }
 }
