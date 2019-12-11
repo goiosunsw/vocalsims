@@ -7,12 +7,13 @@ class VTLoss(object):
     Implements a viscothermal loss calculator 
     and filter approximation
     """
-    def __init__(self,length=1.,radius=.01,speed_of_sound=345.):
+    def __init__(self,length=1.,radius=.01,loss_multiplier=1.0,speed_of_sound=345.):
         self.length = length
         self.radius = radius
         self.speed_of_sound = speed_of_sound
         self.gamma = 1.4
         self.rho = 1.2
+        self.loss_multiplier=loss_multiplier
         self._intermediate_params()
 
     def _intermediate_params(self):
@@ -47,7 +48,8 @@ class VTLoss(object):
         L(f) = exp(1j*k(2*\pi*f)*l)/exp(1j*2*\pi*f/c*l)
         """
         G = self.propagation_constant(f)
-        return np.exp((-G+1j*(2*np.pi*f/self.speed_of_sound))*self.length)
+
+        return np.exp((-G+1j*(2*np.pi*f/self.speed_of_sound))*self.length*self.loss_multiplier)
 
 
     def filter_approx(self, sr=1., n_poles=3, n_pts=None, fmin=None, fmax=None, weight_const=9., f=None):
@@ -487,6 +489,7 @@ class LossyTube(PerfectTube):
 
 class ViscoThermalTube(LossyTube):
     def __init__(self, length=1., radius=.1,
+                 loss_multiplier=1.,
                  sr=48000, speed_of_sound=345.,
                  n_poles=3, n_pts=None, fmin=None, fmax=None, f=None,
                  weight_constant=9., lossy=True):
@@ -501,6 +504,7 @@ class ViscoThermalTube(LossyTube):
         length = n_smpl_prop*smpl_length
         self.physical_length = length
         self.physical_radius = radius
+        self.loss_multiplier = loss_multiplier
         self.speed_of_sound = speed_of_sound
         self.sr = sr
 
@@ -516,6 +520,7 @@ class ViscoThermalTube(LossyTube):
     def _make_lossy(self, f):
         vtl = VTLoss(length=self.physical_length,
                      radius=self.physical_radius,
+                     loss_multiplier=self.loss_multiplier,
                      speed_of_sound=self.speed_of_sound)
 
         vtlf = vtl.filter_approx(f=f,sr=self.sr)
@@ -572,12 +577,14 @@ class RealTimeDuct(object):
     """
     def __init__(self, open=True, lossy=True, 
                  speed_of_sound=345., sr=48000,
+                 loss_multiplier=1.0,
                  simpl_reflection=True):
         self.tubes = []
         if open:
             reflection_coeff = -1
         else:
             reflection_coeff = 1
+        self.loss_multiplier = loss_multiplier
         self.rfunc = lambda x: x*reflection_coeff
         self.reflection_coeff = reflection_coeff
         #self.radii = []
@@ -596,7 +603,7 @@ class RealTimeDuct(object):
     def radii(self):
         return [xx.physical_radius for xx in self.tubes]
 
-    def append_tube(self, length=1, radius=1):
+    def append_tube(self, length=1, radius=1, loss_multiplier=None):
         try:
             prev_radius = self.tubes[-1].physical_radius
             zrat = (radius/prev_radius)**2
@@ -607,9 +614,12 @@ class RealTimeDuct(object):
             #self.reflection_coeffs.append(self.reflection_coeff)
             #self.transmission_coeffs.append(1-self.reflection_coeff)
 
+        if loss_multiplier is None:
+            loss_multiplier = self.loss_multiplier
+
         new_tube = ViscoThermalTube(length=length,radius=radius,
                                      speed_of_sound=self.speed_of_sound,
-                                     sr=self.sr)
+                                     sr=self.sr, loss_multiplier=loss_multiplier)
         self.tubes.append(new_tube)        
         self.scats.append(self.default_mx)
         self.connect_tubes()
