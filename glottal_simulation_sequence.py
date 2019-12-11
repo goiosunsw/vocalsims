@@ -12,8 +12,9 @@ import pympedance.Synthesiser as psyn
 import TimeDomainTubes as tdt
 
 from glottal_simulation_functional import VocalSimulation
+from json_object import JSONObject 
+from scipy.optimize import minimize
 import json_iterators as jsi
-
 from tqdm import trange as trange
 
 __simulation_type__ = "time-domain filter-losses 1st-order reflection filter (object version)"
@@ -38,7 +39,7 @@ if __name__ == '__main__':
 
     sim = VocalSimulation()
     with open(infile) as f:
-        js = json.load(f)
+        js = JSONObject(f)
     try:
         jseq = js['sequence']
         print('Sequence found')
