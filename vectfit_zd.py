@@ -177,7 +177,7 @@ def print_params(poles, residues, d, h):
 def vectfit_auto(f, s, n_poles=10, n_iter=10, show=False,
                  inc_real=False, loss_ratio=1e-2, rcond=-1, 
                  track_poles=False, init_resonances=None,
-                 weights=None,relocate_pi=False):
+                 weights=None,relocate_pi=False,print_pz=False):
     w = imag(s)
     if init_resonances is None: 
         pole_angles = linspace(np.angle(s[0]), np.angle(s[-1]), n_poles+2)[1:-1]
@@ -203,7 +203,8 @@ def vectfit_auto(f, s, n_poles=10, n_iter=10, show=False,
     if track_poles:
         return poles, residues, d, h, np.array(poles_list)
 
-    print_params(poles, residues, d, h)
+    if print_pz:
+        print_params(poles, residues, d, h)
     return poles, residues, d, h
 
 def poleres2pz(poles,residues,offset,slope, maxsteps=500):
