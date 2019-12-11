@@ -1,13 +1,24 @@
-import json
+import json as jpy
 
 class JSONObject(object):
     def __init__(self, json=None):
         self.max_repr_chars=160
         self._json={}
         if json is not None:
-            self._json = json
+            try: 
+                self._json = jpy.load(json)
+                return
+            except AttributeError:
+                pass
+            try:
+                self._json = jpy.loads(json)
+                return
+            except TypeError:#jpy.JSONDecodeError:
+                self._json = json
 
     def _normalise_key(self,key):
+        if len(key) == 0:
+            return key
         if key[0] == '/':
             key = key[1:]
         if isinstance(key,int):
@@ -75,14 +86,17 @@ class JSONObject(object):
     def items(self):
         try:
             for k, v in self._json.items():
-                yield k, self.__class__(v)
+                if isinstance(v, (dict,list,tuple)):
+                    yield k, self.__class__(v)
+                else:
+                    yield k,v
         except AttributeError:
             for kk, vv in enumerate(self._json):
                 yield kk, vv
 
     def read_file(self,filename):
         with open(filename,'r') as f:
-            self._json = json.load(f)    
+            self._json = jpy.load(f)    
 
     def iter_tree(self):
         self._cur_path = []
@@ -91,7 +105,7 @@ class JSONObject(object):
     def _iter_tree(self):
         cur_node = self[self._cur_path]
         cur_path = self._cur_path
-        print("-- "+str(cur_path))
+        # print("-- "+str(cur_path))
         try:
             len(cur_node) == 0
         except TypeError:
@@ -157,6 +171,16 @@ class JSONObject(object):
         ret = parent[key[-1]]
         del parent[key[-1]]
         return self.__class__(ret)
+
+    def to_python(self):
+        return self._json
+
+    def dumps(self, indent=None):
+        return jpy.dumps(self._json, indent=indent)
+
+    def dump(self,f):
+        return jpy.dump(self._json,f)
+        
             
             
         
