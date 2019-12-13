@@ -112,7 +112,7 @@ class LFModel(object):
             raise ValueError("Derivative must be 0 or 1")
 
     def fourier_components(self, nharm=100):
-        npts = 2**np.ceil(np.log2(nharm))
+        npts = int(2**np.ceil(np.log2(nharm)))
         t = np.linspace(0,1,npts+1)
         x = self(t[:npts])
         xf = np.fft.fft(x)/npts
@@ -127,15 +127,15 @@ class LFModel(object):
         and f0 given by tf0,f0
         """
         if amp is None:
-            amp = np.ones(len(t))
+            amp = np.ones(len(tf0))
         
         max_harm = sr/2/np.min(f0)
         exc = self.fourier_components(max_harm)
 
         t = np.arange(np.min(tf0),np.max(tf0),1./sr)
         tmax = max(tf0)
-        f0t = np.interp(t,np.linspace(0,tmax,len(f0vec)),f0vec)
-        a0t =  interp(t,np.linspace(0,tmax,len(amp)),amp)
+        f0t = np.interp(t,tf0,f0)
+        a0t =  np.interp(t,np.linspace(0,tmax,len(amp)),amp)
 
         x = np.zeros(len(t))
         maxf = sr/2
