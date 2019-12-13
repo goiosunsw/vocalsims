@@ -257,13 +257,14 @@ class RealTimeFilter(object):
         self.in_buff = np.zeros(self.n*2)
         self.out_buff = np.zeros(self.n*2)
 
-    def set_coeffs(self, b, a):
+    def set_coeffs(self, b, a, reset=True):
         self.a = a
         self.b = b 
-        na = len(self.a)
-        nb = len(self.b)
-        self.n = max(na,nb)
-        self.init_delay_lines()
+        if reset:
+            na = len(self.a)
+            nb = len(self.b)
+            self.n = max(na,nb)
+            self.init_delay_lines()
 
     def increment_counter(self):
         self.counter += 1
