@@ -328,7 +328,7 @@ class IntegerDelayLine(object):
         Create new delay with an integer delay del 
         """
 
-        self.n = delay+1
+        self.n = (delay)+1
         self.delay = delay
         self.init_delay_line()
         self.counter = 0
@@ -1107,9 +1107,9 @@ class ConstFreqLossDuct(TubeAssembly):
 
         self.radii.append(radius)
         if self.lossy:
-            new_tube = LossyTube(length)
+            new_tube = LossyTube(n_smpl_prop)
         else:
-            new_tube = PerfectTube(length)
+            new_tube = PerfectTube(n_smpl_prop)
         self.tubes.append(new_tube)        
         self.scats.append(self.end_mx)
         self.connect_tubes()
