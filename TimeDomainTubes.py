@@ -486,6 +486,11 @@ class LossyTube(PerfectTube):
             self.prop_in_obj.reset()
         except AttributeError:
             pass
+        try:
+            self.prop_out_obj.reset()
+        except AttributeError:
+            pass
+        PerfectTube.reset(self)
 
 
 class ViscoThermalTube(LossyTube):
@@ -599,6 +604,11 @@ class RealTimeDuct(object):
         self.end_out_last = 0.
         self.end_in_last = 0.
         self.simpl_reflection = simpl_reflection
+
+    @property
+    def total_delay(self):
+        return sum([tt.dlout.delay for tt in self.tubes]) + sum([tt.dlin.delay for tt in self.tubes])
+        
 
     @property
     def radii(self):
@@ -1071,6 +1081,10 @@ class TubeAssembly(object):
             ddin.append(ddi)
 
         return np.array(ddout),np.array(ddin)
+
+    @property
+    def total_delay(self):
+        return sum([tt.dlout.delay for tt in self.tubes]) + sum([tt.dlin.delay for tt in self.tubes])
 
 class ConstFreqLossDuct(TubeAssembly):
     """

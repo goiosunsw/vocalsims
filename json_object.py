@@ -17,8 +17,12 @@ class JSONObject(object):
                 self._json = json
 
     def _normalise_key(self,key):
-        if len(key) == 0:
-            return key
+        try:
+            if len(key) == 0:
+                return key
+        except TypeError:
+            # key is integer
+            return str(key)
         if key[0] == '/':
             key = key[1:]
         if isinstance(key,int):

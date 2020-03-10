@@ -19,12 +19,14 @@
             "humidity": 100
         },
         "blowing pressure": 4000,
+        "starting perturbation": 1.02,
+        "perturbation time": 0.002,
         "reed": {
-            "stiffness": 2e-9,
+            "stiffness": 5e8,
             "rest opening": 1e-5
         },
         "noise": {
-            "enabled": true,
+            "enabled": false,
             "type": "white",
             "scale": 0.005
         },
@@ -34,11 +36,11 @@
     "tracts": {
         "vocal": {
             "description": "single wide pipe",
-            "frequency independent losses": 0.02,
+            "frequency independent losses": 0.05,
             "elements": [{
                     "type": "cylinder",
                     "length": 0.15,
-                    "radius": 0.01,
+                    "radius": 0.02,
                     "loss_multiplier": 5
                 },
                 {
