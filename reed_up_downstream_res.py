@@ -206,10 +206,10 @@ class ReedSimulation(object):
             pass
 
     def set_fixed_points(self, fp):
-        self.pfix_b_in = -fp[0]
-        self.pfix_b_out = -fp[1]
-        self.pfix_vt_in = -fp[2]
-        self.pfix_vt_out = -fp[3]
+        self.pfix_b_out = fp[0]
+        self.pfix_b_in = fp[1]
+        self.pfix_vt_out = fp[2]
+        self.pfix_vt_in = fp[3]
 
     def simulation_init(self, pert=None):
         if pert is None:
@@ -251,9 +251,11 @@ class ReedSimulation(object):
                                                                         p_vt_in_ret,
                                                                         self.pfix_vt_in))    
 
-    def simulate(self,reverse=False,pert=None):
+    def simulate(self,n_samp=None,reverse=False,pert=None):
         self.simulation_init(pert=pert)
-        while self.samp_no < self.n_samp:
+        if n_samp is None:
+            n_samp=self.n_samp
+        while self.samp_no < n_samp:
             self.simulation_tick(reverse=reverse)
             if self.callback_every > 0:
                 if (self.samp_no >= self.last_callback + self.callback_every):
@@ -450,7 +452,7 @@ def calc_fixed_point(sim, eps=1e-5):
             p_in = sim_rev.p_in[-1] + sim_rev.p_vt_in[-vt_delay]
             dvt = np.abs((p_in - p_in_old)/(p_in + p_in_old)*2 )
     print('Simulated {} samples in reverse'.format(sim_rev.samp_no))
-    return sim_rev.p_out[-1], sim_rev.p_in[-1], sim_rev.p_vt_out[-1], sim_rev.p_vt_in[-1]
+    return -sim_rev.p_in[-1], -sim_rev.p_out[-1], -sim_rev.p_vt_in[-1],-sim_rev.p_vt_out[-1] 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
