@@ -604,6 +604,7 @@ class RealTimeDuct(object):
         self.end_out_last = 0.
         self.end_in_last = 0.
         self.simpl_reflection = simpl_reflection
+        self.termination = 'flanged'
 
     @property
     def total_delay(self):
@@ -700,18 +701,29 @@ class RealTimeDuct(object):
                    tubes[inext], 
                    self.scats[ii+scatoff])
 
-    def adjust_termination(self):
+    def adjust_termination(self, term=None):
+        if term is None:
+            term = self.termination
+        else:
+            self.termination = term
         last_rad = self.tubes[-1].physical_radius
-        if self.lossy:
-            if self.simpl_reflection:
-                self.rlfilt = simple_relfection_filt(radius=last_rad,
-                                                speed_of_sound=self.speed_of_sound,
-                                                sr=self.sr)
-            else:
-                rl = RadLoss(radius=last_rad,
-                             speed_of_sound=self.speed_of_sound)
-                self.rlfilt = rl.filter_approx(sr=self.sr)
-            self.rfunc = self.rlfilt.tick
+        if self.termination == 'flanged':
+            if self.lossy:
+                if self.simpl_reflection:
+                    self.rlfilt = simple_relfection_filt(radius=last_rad,
+                                                    speed_of_sound=self.speed_of_sound,
+                                                    sr=self.sr)
+                else:
+                    rl = RadLoss(radius=last_rad,
+                                speed_of_sound=self.speed_of_sound)
+                    self.rlfilt = rl.filter_approx(sr=self.sr)
+                self.rfunc = self.rlfilt.tick
+            else: 
+                self.rfunc = lambda x : -x
+        elif self.termination == 'open':
+            self.rfunc = lambda x: -x
+        elif self.termination == 'closed':
+            self.rfunc = lambda x: x
 
 
     def tick(self, in_smpl):
