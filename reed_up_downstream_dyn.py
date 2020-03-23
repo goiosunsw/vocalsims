@@ -29,6 +29,85 @@ def td_to_tf_tract(ta):
 
     return taz
 
+##
+# Non-linear stiffnesses for reed force
+class nlstiff(object):
+    """
+    Parent non-linear stiffness class
+    Corresponds to linear stiffness (returns 0)
+    
+    Usage:  nl = nlstiff; f = nl(x)
+    """     
+    def __init__(self):
+        self._f_ = np.vectorize(self._f)
+    
+    def _f(self, x):
+        return x
+
+    def __call__(self, x):
+        return self._f_(x)
+    
+     
+        
+
+class nlstiff_log(nlstiff):
+    """
+    Non-linear stiffness (log)
+    
+    Usage: nl = nlstiff_log(k, k2)
+     - k: linear stiffnes (derivative at origin)
+     - k2: non-linearity (smaller k2 => closer to linear)
+    """     
+    def __init__(self, k=1., k2=1.):
+        self.k = k
+        self.k2 = k2
+        nlstiff.__init__(self)
+    
+    def _f(self,x):
+        return self.k2*np.log(x/self.k/self.k2+1)
+        
+class nlstiff_inv_p(nlstiff):
+    """
+    Non-linear stiffness (inverse pressure)
+    
+    Usage: nl = nlstiff_log(k, pc)
+        above pc, reed opening is proportional to x0-a/(p-pc)
+    """     
+    def __init__(self, pc=1.0):
+        self.pc = pc
+        self._f = np.vectorize(self._f)
+        nlstiff.__init__(self)
+    
+    def _f(self, p):
+        if p<self.pc:
+            return p
+        else:
+            return 1-(1-self.pc)**2/(p-2*self.pc+1)
+    
+
+class nlstiff_parabolic(nlstiff):
+    """
+    Non-linear parabolic stiffness 
+    (similar to Chatziionnou  at low displacements but faster to calculate)
+    
+    Usage:  nl = nlstiff_parabolic(x_st, x_ev); f = nl(x)
+        -x_st = position at which non-linear stiffness starts having an effect
+        -x_ev = position at which nl component is the same as linear
+    """     
+    
+    def __init__(self,x_st=0.6,x_ev=1.2):
+        self.xc=x_st
+        self.xs=x_ev
+    
+    def f(self,x):
+        xdiff = -x-self.xc
+        if xdiff > 0.0:
+            return ((x+self.xc)/(self.xs-self.xc))**2
+        else:
+            return 0.0
+
+##
+# Reed simulator object
 
 class ReedSimulation(object):
     """
@@ -63,6 +142,7 @@ class ReedSimulation(object):
     def tract_from_json(self, jd):
         lengths = []
         radii = []
+        term = 'flanged'
         if self.freq_dep_losses:
             ta = tdt.RealTimeDuct(speed_of_sound=self.c,sr=self.sr)
         else:
@@ -75,8 +155,8 @@ class ReedSimulation(object):
                 radii.append(el['radius'])
                 ta.append_tube(length=el['length'],radius=el['radius'],loss_multiplier=el['loss multiplier'])
             elif el['type'] == 'termination':
-                pass
-        ta.adjust_termination()
+                term = el['kind']
+        ta.adjust_termination(term)
         return ta, radii
 
     def fill_tract(self, id, p_out=0.0):
@@ -86,21 +166,59 @@ class ReedSimulation(object):
             p_in=tract.tick(p_out)
         return(p_in)
 
+    def non_linear_reed_from_json(self, json):
+        #  non-linear stiffness term
+        #nltog = 1.0
+        if json['model'] == 'disabled':
+            nlfunc =  None
+        elif json['model'] == 'log':
+            nlfunc = nlstiff_log(k=self.k,k2=self.a0/json['non-linearity']) 
+        elif json['model'] == 'inverse_p':
+            nl_adim = nlstiff_inv_p(pc=json['onset pressure fraction'])
+            nlfunc = lambda p: self.a0*nl_adim(p/self.k/self.a0)
+        
+        self.nlfunc = nlfunc
+        # if self.nlfunc is not None:
+        #     from scipy.interpolate import interp1d
+        #     x = arange(-2,1,0.01)
+        #     nl = frompyfunc(nlfunc,1,1)
+        #     dp = (1+nl(x))*x
+        #     self.invnl = interp1d(dp,x)
+ 
+
     def from_json(self, json):
         self.json = json
         self.desc = json['description']
 
+        jsim = json['simulation']
+        self.sr = jsim['sample rate']
+        self.t_max = jsim['duration']
+        self.callback_every = jsim['callback every']
+
         jenv = json['environment']
 
         self.p_blow = jenv['blowing pressure']['value']
+        # p_blow changes if there's a ramp, so the target value
+        # is stored in p_blow target
+        self.p_blow_target = self.p_blow
+        self.p_blow_ramp_time = jenv['blowing pressure']['ramp duration']
+        self.p_blow_ramp_type = jenv['blowing pressure']['ramp type']
+        self.p_blow_ramp_enabled = jenv['blowing pressure']['ramp enabled']
+        self.p_blow_dp_per_samp = self.p_blow_target/self.p_blow_ramp_time/self.sr
+        
         self.pert = json['perturbation']['factor']
         self.pert_time = json['perturbation']['time']
         self.pert_var = json['perturbation']['variable']
+        self.pert_p_blow = json['perturbation']['blowing pressure']
         self.k = jenv['reed']['stiffness']
         self.a0 = jenv['reed']['rest opening']
         self.wr = jenv['reed']['resonance frequency']*2*np.pi
         self.qr = jenv['reed']['quality factor']
         self.reed_dynamic = jenv['reed']['dynamic']
+        try:
+            self.non_linear_reed_from_json(jenv['reed']['non-linear force'])
+        except KeyError:
+            self.nlfunc=None
 
         jac = jenv['acoustic']
         self.c = jac['speed of sound']
@@ -108,10 +226,6 @@ class ReedSimulation(object):
         self.mu = jac['viscosity']
         self.sqrt_two_on_rho = np.sqrt(2/self.rho)
 
-        jsim = json['simulation']
-        self.sr = jsim['sample rate']
-        self.t_max = jsim['duration']
-        self.callback_every = jsim['callback every']
 
         # turn on/off subglottal tract
         self.vt_on=jenv['vocal tract enabled']
@@ -208,6 +322,7 @@ class ReedSimulation(object):
         self.p_rad_in = []
         self.u_rad = []
         self.a = []
+        self.p_blow_vec = []
         try:
             self.init_hdf5()
         except TypeError:
@@ -260,27 +375,43 @@ class ReedSimulation(object):
         #                                                                 p_vt_in_ret,
         #                                                                 self.pfix_vt_in))    
 
+    def update_ramps(self):
+        if self.p_blow < self.p_blow_target:
+            if self.p_blow_ramp_type == 'exponential':
+                frac = self.p_blow_dp_per_samp/self.p_blow_target
+                dp = (self.p_blow_target-self.p_blow)*frac
+            elif self.p_blow_ramp_type == 'linear':
+                dp = self.p_blow_dp_per_samp
+            if self.p_blow < self.pert_p_blow:
+                self.p_blow += dp
+
     def simulate(self,n_samp=None,reverse=False,pert=None):
         self.simulation_init(pert=pert)
+        if self.p_blow_ramp_enabled:
+            self.p_blow=0.0
         if pert is None:
             pert = self.pert
         if n_samp is None:
             n_samp=self.n_samp
         while self.samp_no < n_samp:
+            if self.p_blow_ramp_enabled:
+                self.update_ramps()
             if pert:
-                if self.samp_no > self.pert_time*self.sr:
+                if self.samp_no > self.pert_time*self.sr or self.p_blow>self.pert_p_blow:
                     if self.pert_var == 'reed rest opening':
                         self.a0 *= pert
                     elif self.pert_var == 'blowing pressure':
                         self.p_blow *= pert
+                    print('applied perturbation at sample {} (P_blow={})'.format(self.samp_no,self.p_blow))
                     pert = False
-                    print('applied perturbation at sample {}'.format(self.samp_no))
+                    self.pert_time = self.samp_no/self.sr
             self.simulation_tick(reverse=reverse)
             if self.callback_every > 0:
                 if (self.samp_no >= self.last_callback + self.callback_every):
                     if self.hdf5_file:
                         self.hdf5_callback(self.last_callback, self.samp_no)
                         self.last_callback = self.samp_no
+            self.p_blow_vec.append(self.p_blow)
 
         self.finalize()
         
@@ -301,9 +432,11 @@ class ReedSimulation(object):
             g = f[self.hdf5_path]
             g.attrs['end_time'] = datetime.now().strftime('%Y%m%d-%H%M%S')
 
-    def reed_opening(self,dp):
+    def reed_opening(self,dp,dynamic=None):
 
-        if self.reed_dynamic:
+        if dynamic is None:
+            dynamic=self.reed_dynamic
+        if dynamic:
             try:
                 pprev = self.p_in[-1] + self.p_out[-1] - self.p_vt_in[-1] - self.p_vt_out[-1]
             except IndexError:
@@ -318,9 +451,12 @@ class ReedSimulation(object):
             except IndexError:
                 a1 = self.init_a
             
-        static_term = self.a0 - dp/self.k
+        if self.nlfunc is None:
+            static_term = self.a0 - dp/self.k
+        else:
+            static_term = self.a0 - self.nlfunc(dp)
             
-        if self.reed_dynamic:
+        if dynamic:
             srwr = (self.sr/self.wr)
             srwr2 = srwr**2
             srwrqr = srwr/self.qr/2
@@ -337,8 +473,9 @@ class ReedSimulation(object):
             a = 0.0
         return a
 
-    def puchar(self,dp):
-        a = self.reed_opening(dp)
+    def puchar(self,dp,a=None,dynamic=None):
+        if a is None:
+            a = self.reed_opening(dp,dynamic=dynamic)
         return a * self.sqrt_two_on_rho * np.sqrt(np.abs(dp)) * np.sign(dp)
 
     def func(self, u, args):
