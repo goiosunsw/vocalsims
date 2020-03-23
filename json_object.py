@@ -29,6 +29,13 @@ class JSONObject(object):
             key = str(key)
         if isinstance(key,str):
             key = key.split('/')
+            key_ = []
+            for k in key:
+                try:
+                    key_.append(int(k))
+                except ValueError:
+                    key_.append(k)
+            key=key_
         return key
         
     def __getitem__(self,key):
@@ -83,6 +90,7 @@ class JSONObject(object):
         except IndexError:
             for ii in range(len(el),key[-1]):
                 el.append({})
+            el.append(value)
 
     def __len__(self):
         return len(self._json)
