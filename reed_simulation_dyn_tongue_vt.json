@@ -1,6 +1,6 @@
 {
-    "description": "Reed simulation with vocal tract and reed dynamics and non-linear reed force",
-    "version": "20200320",
+    "description": "Reed simulation with open vocal tract and reed dynamics and non-linear reed force",
+    "version": "20200423",
     "simulation": {
         "sample rate": 48000,
         "duration": 0.6,
@@ -69,7 +69,7 @@
     "tracts": {
         "vocal": {
             "description": "narrow tongue",
-            "frequency independent losses": 0.05,
+            "frequency independent losses": 0.0,
             "elements": [{
                     "type": "cylinder",
                     "length": 0.02,
@@ -78,14 +78,8 @@
                 },
                 {
                     "type": "cylinder",
-                    "length": 0.13,
+                    "length": 0.47,
                     "radius": 0.015,
-                    "loss multiplier": 5
-                },
-                {
-                    "type": "cylinder",
-                    "length": 0.015,
-                    "radius": 0.001,
                     "loss multiplier": 5
                 },
                 {
@@ -96,7 +90,7 @@
         },
         "bore": {
             "description": "single clarinet-like cylinder",
-            "frequency independent losses": 0.01,
+            "frequency independent losses": 0.0,
             "elements": [{
                     "type": "cylinder",
                     "length": 0.49,
