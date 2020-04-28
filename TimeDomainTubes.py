@@ -101,6 +101,39 @@ class VTLoss(object):
 
         return RealTimeFilter(b=b,a=a)
 
+class ClosedReflectionHighPass(object):
+    """
+    Implements a closed reflection (perfect) but with a low frequency cut
+    so that DC pressure doesn't build up in the tube
+    
+    r should be around .995 for a sampling rate of 44100
+    """
+    def __init__(self, r=.995):
+        self.r = r
+        self.yprev = 0
+        self.xprev = 0
+
+    def filter_approx(self):
+        b = np.array([1,-1])
+        a = np.array([-self.r])
+        return RealTimeFilter(b=b,a=a)
+
+    def __call__(self, x):
+        y = x - self.xprev + self.r*self.yprev
+        self.xprev = x
+        self.yprev = y
+        #return -(1-2*y)
+        return y
+
+class DCCut(object):
+    def __init__(self, r=.995, order=1):
+        self.r = r
+        
+    def filter_approx(self):
+        b = np.array([1,-2,1])
+        a = np.array([1,-2*self.r, self.r**2])
+        return RealTimeFilter(b=b,a=a)
+
 class RadLoss(object):
     """
     Implements a radiation loss calculator 
@@ -584,7 +617,8 @@ class RealTimeDuct(object):
     def __init__(self, open=True, lossy=True, 
                  speed_of_sound=345., sr=48000,
                  loss_multiplier=1.0,
-                 simpl_reflection=True):
+                 simpl_reflection=True,
+                 dc_cut=-1, dc_cut_order=1):
         self.tubes = []
         if open:
             reflection_coeff = -1
@@ -605,6 +639,8 @@ class RealTimeDuct(object):
         self.end_in_last = 0.
         self.simpl_reflection = simpl_reflection
         self.termination = 'flanged'
+        self.dc_cut = dc_cut
+        self.dc_cut_order = dc_cut_order
 
     @property
     def total_delay(self):
@@ -717,16 +753,23 @@ class RealTimeDuct(object):
                     rl = RadLoss(radius=last_rad,
                                 speed_of_sound=self.speed_of_sound)
                     self.rlfilt = rl.filter_approx(sr=self.sr)
-                self.rfunc = self.rlfilt.tick
+                rfunc = self.rlfilt.tick
             else: 
-                self.rfunc = lambda x : -x
+                rfunc = lambda x : -x
         elif self.termination == 'open':
-            self.rfunc = lambda x: -x
+            rfunc = lambda x: -x
         elif self.termination == 'closed':
-            self.rfunc = lambda x: x
+            rfunc = lambda x: x
+
+        if self.dc_cut>0:
+            dccut = DCCut(r=self.dc_cut).filter_approx()
+            self.rfunc = lambda x: 2*dccut.tick(rfunc(x))-rfunc(x)
+            self.dcfilt = dccut
+        else:
+            self.rfunc = rfunc
 
 
-    def tick(self, in_smpl):
+    def tick(self, in_smpl, end_pressure=None):
         out_next = in_smpl
         # samples leaving junctions 
         # [to the outgoing line on the next tube,
@@ -753,6 +796,9 @@ class RealTimeDuct(object):
         out_last = tube.read_next_out_without_tick()
         #out_last = tube.insert_outgoing(in_smpl)
         reflected = (self.rfunc(out_last))
+        reflected *= np.abs(self.reflection_coeff)
+        if end_pressure is not None:
+            reflected += end_pressure
         all_leaving.append([0.,reflected])
         #import pdb
         #pdb.set_trace()
