@@ -124,6 +124,8 @@ class ReedSimulation(object):
         self.sol_eps = 1e-10;
         self.init_time = datetime.now().strftime('%Y%m%d-%H%M%S')
         self.hdf5_file = None
+        # impose blowing pressure at reed
+        self.blow_at_reed = True
 
     def reset(self):
         self.samp_no = 0
@@ -143,12 +145,20 @@ class ReedSimulation(object):
         lengths = []
         radii = []
         term = 'flanged'
+        losses = jd["frequency independent losses"]
+        reflection_coeff = -(1-losses)
+
         if self.freq_dep_losses:
             ta = tdt.RealTimeDuct(speed_of_sound=self.c,sr=self.sr)
+            ta.reflection_coeff = reflection_coeff
         else:
-            losses = jd["frequency independent losses"]
-            reflection_coeff = -(1-losses)
             ta = tdt.ConstFreqLossDuct(speed_of_sound=self.c,sr=self.sr,reflection_coeff=reflection_coeff)
+        try:
+            if jd['dc cut/r']>0:
+                ta.dc_cut = jd['dc cut/r']
+        except KeyError:
+            pass
+
         for el in jd['elements']:
             if el['type'] == 'cylinder':
                 lengths.append(el['length'])
@@ -240,6 +250,10 @@ class ReedSimulation(object):
         jvt = json['tracts']['vocal']
         vt, radii = self.tract_from_json(jvt)
         self.set_tract('vocal',vt)
+
+        # if tract is closed, impose blowing pressure at closed end
+        if jvt['elements'].to_python()[-1]['kind']=='closed':
+            self.blow_at_reed = False
 
         # Subglottal tract
         jsb = json['tracts']['bore']
@@ -512,15 +526,22 @@ class ReedSimulation(object):
         
         #zeta = self.zeta_mul / a**2;
         #u_guess = self.u_prev
+        if self.blow_at_reed:
+            p_blow = self.p_blow
+        else:
+            # if not blowing at reed, than p_blow has already been included in 
+            # the incoming wave
+            p_blow = 0
+
         if reverse:
-            deltap_guess = self.p_blow + 2*p_in 
+            deltap_guess = p_blow + 2*p_in
             u_guess = np.sqrt(np.abs(2*deltap_guess/self.rho))*(self.a0-deltap_guess/self.k)
-            u = fsolve(self.func_reverse, u_guess, args = [self.p_blow, p_b_in_cur, p_vt_in_cur])[0]
+            u = fsolve(self.func_reverse, u_guess, args = [p_blow, p_b_in_cur, p_vt_in_cur])[0]
                         #fprime = self.jac)
         else:
-            deltap_guess = self.p_blow - 2*p_in 
+            deltap_guess = p_blow - 2*p_in
             u_guess = np.sqrt(np.abs(2*deltap_guess/self.rho))*(self.a0-deltap_guess/self.k)
-            u = fsolve(self.func, u_guess, args = [self.p_blow, p_b_in_cur, p_vt_in_cur])[0]
+            u = fsolve(self.func, u_guess, args = [p_blow, p_b_in_cur, p_vt_in_cur])[0]
                         #fprime = self.jac)
         
         if self.add_noise:
@@ -539,8 +560,13 @@ class ReedSimulation(object):
         
         self.u_prev = u
         _=ta.tick(po)
+        if not self.blow_at_reed:
+            end_pressure = self.p_blow
+        else:
+            end_pressure = None
+            
         if self.vt_on:
-            pllost=vta.tick(po_vt)
+            pllost=vta.tick(po_vt, end_pressure=end_pressure)
         
         if reverse:
             self.p_out.append(p_b_in_cur)
