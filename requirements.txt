@@ -1,0 +1,16 @@
+-e git+https://github.com/goiosunsw/goios_utils@ce4cc7daa0e3130d86e7fe04e950433358c48b1d#egg=goios_utils
+h5py==2.9.0
+hickle==3.3.2
+ipykernel==4.10.0
+ipympl==0.2.1
+ipython==7.2.0
+mpmath==1.1.0
+numba==0.45.1
+numpy==1.16.0
+pandas==1.0.3
+pympedance==0.1
+-e git+https://github.com/goiosunsw/pypevoc@333f63ac95d3959985aeabc5c1612a17952cfcf1#egg=pypevoc
+scipy==1.2.0
+seaborn==0.9.0
+sympy==1.3
+tqdm==4.29.1
