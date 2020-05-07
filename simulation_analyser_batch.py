@@ -78,6 +78,8 @@ for thisfile in fl:
     rf=np.fft.fft(impresp_b,n=nzfft)
     z_b=(1+rf)/(1-rf)*pckl['zch_b']
     
+    # z_r=
+    
     z_b_pks,_ = sig.find_peaks(np.abs(z_b))
     for ii,zz in enumerate(z_b_pks[:nzpks]):
         results['z_bore_pk_f_{}'.format(ii)] = f[zz]
@@ -107,8 +109,14 @@ for thisfile in fl:
 
     a_trans_end = amax*.9
     a_trans_start = amax*.01
-    i_trans_end = np.flatnonzero(pvoc.fundamental_magnitude>a_trans_end)[0]-1
-    i_trans_start = np.flatnonzero(pvoc.fundamental_magnitude[:i_trans_end]<a_trans_start)[-1]
+    try:
+        i_trans_end = np.flatnonzero(pvoc.fundamental_magnitude>a_trans_end)[0]-1
+    except IndexError:
+        i_trans_end = len(pvoc.t)-1
+    try:
+        i_trans_start = np.flatnonzero(pvoc.fundamental_magnitude[:i_trans_end]<a_trans_start)[-1]
+    except IndexError:
+        i_trans_start = i_trans_end -1
     i_trans = slice(i_trans_start,i_trans_end)
     atrans = 20*np.log10(pvoc.fundamental_magnitude[i_trans])
     ttrans = pvoc.t[i_trans]

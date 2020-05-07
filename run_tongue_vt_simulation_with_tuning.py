@@ -1,3 +1,4 @@
+import sys
 from copy import deepcopy
 from reed_up_downstream_dyn import ReedSimulation, calc_fixed_point
 from json_object import JSONObject
@@ -18,21 +19,30 @@ def imp_resp(js, nfft=1024):
     return impresp, impresp_vt
 
 
-jsfile = 'tongue_2seg_vt_open_simulation_with_tuning.json'
+#jsfile = 'tongue_2seg_vt_open_simulation_with_tuning.json'
+jsfile = sys.argv[1]
 
 with open(jsfile) as f:
     js = JSONObject(f)
 
-dx = js['environment/acoustic/speed of sound']/js['simulation/sample rate']*4
+dx = js['environment/acoustic/speed of sound']/js['simulation/sample rate']
 n_main = 1
 
-#tongue_rad_list=[0.02,0.015,0.01,0.008,0.006,0.004,0.003,0.0015]
-tongue_rad_list=[0.015,0.008,0.005,0.003]
+tongue_rad_list=[0.02,0.015,0.01,0.008,0.006,0.004,0.003,0.0015]
+#tongue_rad_list=[0.015,0.008,0.005,0.003]
+tongue_rad_vt_len_dict = {0.02: 0.09705464909865272,
+ 0.015: 0.1326027397260274,
+ 0.01: 0.16329209263348388,
+ 0.008: 0.17943091668228756,
+ 0.006: 0.18477824876547813,
+ 0.004: 0.1893602987979393,
+ 0.003: 0.19988585823287583,
+ 0.0015: 0.19178082191780824}
 
-pblow_mult_list = [.8,.9,1.0,1.1,1.2]
+pblow_mult_list = [.9,1.0,1.05,1.1,1.2]
 pblow_traget_mul = 1.1
 
-len_range = 0.02
+len_range = 0.03
 nfft_ir = 2**14
 
 base_out_name = 'tongue_vt_open_tuning'
@@ -93,15 +103,15 @@ def run_smooth_pert(js):
 
 def js_generator():
     
-    for tongue_rad in tongue_rad_list:
+    for tongue_rad, base_main_len in tongue_rad_vt_len_dict.items():
         with open(jsfile) as f:
             js0 = JSONObject(f)
-        base_main_len = js0['tracts/vocal/elements/{}/length'.format(n_main)] 
+        #base_main_len = tongue_rad_vt_len_dict[tongue_rad]
         base_pblow = js0['perturbation/blowing pressure']
         #tongue_rad = js0['tracts/vocal/elements/0/radius']
         main_vt_rad = js0['tracts/vocal/elements/{}/radius'.format(n_main)]
 
-        ii = n_main
+        ii = 0
         js0['tracts/vocal/elements/%d/radius'%(ii)] = tongue_rad
         
         for main_len in np.arange(base_main_len-len_range,base_main_len+len_range,dx):
@@ -120,7 +130,7 @@ def md_worker(args):
 
     js, impresp, impresp_vt = args
 
-    tongue_rad = js['tracts/vocal/elements/1/radius']
+    tongue_rad = js['tracts/vocal/elements/0/radius']
     main_len = js['tracts/vocal/elements/{}/length'.format(n_main)] 
     pblow = js['perturbation/blowing pressure'] 
     print("tongue radius {}, vt length = {}, pblow = {}".format(tongue_rad,main_len,pblow))
