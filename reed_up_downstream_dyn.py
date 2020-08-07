@@ -75,14 +75,16 @@ class nlstiff_inv_p(nlstiff):
     """     
     def __init__(self, pc=1.0):
         self.pc = pc
-        self._f = np.vectorize(self._f)
+        #self._f = np.vectorize(self._my_f)
+        self.f = self._my_f
         nlstiff.__init__(self)
     
-    def _f(self, p):
+    def _my_f(self, p):
         if p<self.pc:
             return p
         else:
-            return 1-(1-self.pc)**2/(p-2*self.pc+1)
+            ipc = 1-self.pc
+            return 1-ipc*ipc/(p-2*self.pc+1)
     
 
 class nlstiff_parabolic(nlstiff):
