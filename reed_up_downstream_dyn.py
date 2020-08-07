@@ -166,6 +166,20 @@ class ReedSimulation(object):
                 lengths.append(el['length'])
                 radii.append(el['radius'])
                 ta.append_tube(length=el['length'],radius=el['radius'],loss_multiplier=el['loss multiplier'])
+            elif el['type'] == 'exponential horn':
+                horn_len = el['length']
+                input_rad = el['input radius']
+                output_rad = el['output radius']
+
+                seg_len = ta.unit_length()*2
+                n_seg = int(round(horn_len/seg_len))
+                seg_rads = np.logspace(np.log10(input_rad),np.log10(output_rad),n_seg+1)[:-1]
+                
+                for rr in seg_rads:
+                    lengths.append(seg_len)
+                    radii.append(rr)
+                    ta.append_tube(length=seg_len,radius=rr,loss_multiplier=el['loss multiplier'])
+
             elif el['type'] == 'termination':
                 term = el['kind']
         ta.adjust_termination(term)

@@ -1,4 +1,10 @@
 import sys
+import random
+import types
+import collections
+import six
+from datetime import datetime
+
 from copy import deepcopy
 from reed_up_downstream_dyn import ReedSimulation
 from json_object import JSONObject
@@ -7,6 +13,131 @@ import numpy as np
 import scipy.signal as sig
 import pickle
 import multiprocessing
+
+def json_path_get(js, addr):
+    ret = js
+    for kk in addr.split('/'):
+        try:
+            kk=int(kk)
+        except ValueError:
+            pass
+        ret = ret[kk]
+    return ret
+
+def is_iterable_but_not_string(arg):
+    return (
+        isinstance(arg, collections.Iterable) 
+        and not isinstance(arg, six.string_types)
+    )
+
+def iternodes(js):
+    for k,v in js.items():
+        yield k,v
+        try:
+            yield from iternodes(v)
+        except AttributeError:
+            pass
+   
+# def iterable_but_not_string(obj):
+#     try:
+#         obj.__iter__
+#         if not isinstance(obj, (str, bytes, unicode)):
+#             return True
+#         print('Here')
+#     finally:
+#         return False
+
+def list_dict_items(obj):
+    try:
+        for k, v in obj.items():
+            yield k, v
+    except AttributeError:
+        for k, v in enumerate(obj):
+            yield k, v
+            
+def iternodes(js, root=""):
+    for k,v in list_dict_items(js):
+        if root:
+            fullv = root+'/'+str(k)
+        else:
+            fullv = str(k)
+        yield fullv,v
+        try:
+            if is_iterable_but_not_string(v):
+                yield from iternodes(v,root=fullv)
+        except TypeError:
+            pass
+
+def iternodes_replacer(js, root=""):
+    if root=="":
+        iternodes_replacer.js = js
+    for k,v in list_dict_items(js):
+        if root:
+            fullv = root+'/'+str(k)
+        else:
+            fullv = str(k)
+            
+        yield fullv,v
+
+        if is_iterable_but_not_string(v):
+            try:
+                v.keys()
+            except AttributeError:
+                pass
+            else:    
+                if '_range' in v.keys():
+                    vr = v['_range']
+                    v['_value'] = random.uniform(min(vr),max(vr))
+                elif '_choice' in v.keys():
+                    vl = v['_choice']
+                    v['_value'] = random.choice(vl)
+                elif '_link' in v.keys():
+                    v['_value'] = json_path_get(iternodes_replacer.js,v['_link'])
+            finally:
+                yield from iternodes_replacer(v,root=fullv)
+                
+
+def apply_underscores(js, root=""):
+    #print("!!"+str(js)[:20])
+    if root=="":
+        apply_underscores.js = js
+        
+    if root.split('/')[-1] == '_link':
+        vv = json_path_get(apply_underscores.js,js)
+        #print(vv,root)
+        yield from apply_underscores(vv, root=root[:root.find('/_link')])
+        #print("!H")
+    else:
+        try:
+            if '_link' in js.keys():
+                pass
+            else:
+                yield root,js
+
+        except AttributeError:
+            yield root,js
+        
+    if is_iterable_but_not_string(js):
+        for k,v in list_dict_items(js):
+            if root:
+                fullv = root+'/'+str(k)
+            else:
+                fullv = str(k)
+
+            if is_iterable_but_not_string(v):
+                try:
+                    v.keys()
+                except AttributeError:
+                    pass
+                else:    
+                    if '_range' in v.keys():
+                        vr = v['_range']
+                        v = random.uniform(min(vr),max(vr))
+                        
+                    elif '_choice' in v.keys():
+                        vl = v['_choice']
+                        v = random.choice(vl)
+            yield from apply_underscores(v,root=fullv)
 
 def imp_resp(js, nfft=1024):
     sim = ReedSimulation()
@@ -25,7 +156,7 @@ with open(jsfile) as f:
 dx = js['environment/acoustic/speed of sound']/js['simulation/sample rate']
 n_main = 1
 
-tongue_rad_list=[0.02,0.015,0.01,0.008,0.006,0.004,0.003,0.0015]
+#tongue_rad_list=[0.02,0.015,0.01,0.008,0.006,0.004,0.003,0.0015]
 #tongue_rad_list=[0.015,0.008,0.005,0.003]
 tongue_rad_vt_len_dict = {0.02: 0.09705464909865272,
  0.015: 0.1326027397260274,
@@ -100,28 +231,17 @@ def run_smooth_pert(js):
 
 def js_generator():
     
-    for tongue_rad, base_main_len in tongue_rad_vt_len_dict.items():
+    while True:
         with open(jsfile) as f:
             js0 = JSONObject(f)
-        #base_main_len = tongue_rad_vt_len_dict[tongue_rad]
-        base_pblow = js0['perturbation/blowing pressure']
-        #tongue_rad = js0['tracts/vocal/elements/0/radius']
-        main_vt_rad = js0['tracts/vocal/elements/{}/radius'.format(n_main)]
 
-        ii = 0
-        js0['tracts/vocal/elements/%d/radius'%(ii)] = tongue_rad
-        
-        for main_len in np.arange(base_main_len-len_range,base_main_len+len_range,dx):
-            js1 = js0.copy()
-            js1['tracts/vocal/elements/{}/length'.format(n_main)]=main_len 
-            impresp,impresp_vt = imp_resp(js1,nfft=nfft_ir)
+        jsn = JSONObject()
+        for k,v in apply_underscores(js0.to_python()):
+            if not is_iterable_but_not_string(v):
+                jsn[k]=v
 
-            for pblow_mult in pblow_mult_list:
-                js2 = js1.copy()
-                pblow = base_pblow * pblow_mult 
-                js2['perturbation/blowing pressure'] = pblow
-                js2['environment/blowing pressure/value'] = pblow * pblow_traget_mul
-                yield js2, impresp, impresp_vt
+        impresp,impresp_vt = imp_resp(jsn,nfft=nfft_ir)
+        yield jsn, impresp, impresp_vt
 
 def md_worker(args):
 
@@ -153,7 +273,7 @@ def md_worker(args):
                  'impresp_b':impresp, 'impresp_vt':impresp_vt, 'zch_b':zch_b, 'zch_vt':zch_vt,'js':js,
                     'u':u, 'a':a}
     
-    outfile = base_out_name + '_{}_{}_{}.pickle'.format(tongue_rad, main_len, pblow)
+    outfile = base_out_name + '_{}.pickle'.format(datetime.strftime(datetime.now(),'%Y%M%d_%H%M'))
 
     with open(outfile,'wb') as f:
         pickle.dump(this_dict,f)
