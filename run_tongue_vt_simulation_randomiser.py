@@ -282,7 +282,7 @@ def md_worker(q,iolock):
                     'impresp_b':impresp, 'impresp_vt':impresp_vt, 'zch_b':zch_b, 'zch_vt':zch_vt,'js':js,
                         'u':u, 'a':a}
         
-        outfile = base_out_name + '_{}.pickle'.format(datetime.strftime(datetime.now(),'%Y%M%d_%H%M'))
+        outfile = base_out_name + '_{}.pickle'.format(datetime.strftime(datetime.now(),'%Y%M%d_%H%M%S'))
 
         with open(outfile,'wb') as f:
             pickle.dump(this_dict,f)
