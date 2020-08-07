@@ -199,6 +199,8 @@ def run_smooth_pert(js):
 
     pert_started = False
     pert_finished = False
+    pert_t_on = -1.
+    pert_t_off = -1.
 
     while sim.samp_no < n_samp:
         sim.simulation_tick(reverse=False)
@@ -240,45 +242,60 @@ def js_generator():
             if not is_iterable_but_not_string(v):
                 jsn[k]=v
 
-        impresp,impresp_vt = imp_resp(jsn,nfft=nfft_ir)
-        yield jsn, impresp, impresp_vt
+        yield jsn
 
-def md_worker(args):
+from time import sleep
 
-    js, impresp, impresp_vt = args
+def md_worker(q,iolock):
+    while True:
+        js = q.get()
 
-    tongue_rad = js['tracts/vocal/elements/0/radius']
-    main_len = js['tracts/vocal/elements/{}/length'.format(n_main)] 
-    pblow = js['perturbation/blowing pressure'] 
-    print("tongue radius {}, vt length = {}, pblow = {}".format(tongue_rad,main_len,pblow))
+        if js is None:
+            break
 
+        tongue_rad = js['tracts/vocal/elements/0/radius']
+        main_len = js['tracts/vocal/elements/{}/length'.format(n_main)] 
+        pblow = js['perturbation/blowing pressure'] 
 
-    sim = run_smooth_pert(js)
-    
-    p_b = sim.p_in + sim.p_out;
-    p_vt = sim.p_vt_in + sim.p_vt_out;
+        with iolock:
+            print("Processing")    
+            print("tongue radius {}, vt length = {}, pblow = {}".format(tongue_rad,main_len,pblow))
+        impresp,impresp_vt = imp_resp(js,nfft=nfft_ir)
 
-    u = (sim.p_out - sim.p_in)/sim.zc_b;
-    u_sg = -(sim.p_vt_out - sim.p_vt_in)/sim.zc_vt
-
-    a = sim.a
-    f0=1/(sim.tracts['bore'].total_delay/sim.sr*2)
-    #hhb = HeterodyneHarmonic(p_b,sr=sim.sr,nwind=1024,nhop=256,f=f0)
-    #hhv = HeterodyneHarmonic(p_vt,sr=sim.sr,nwind=1024,nhop=256,f=f0)
-    zch_b = sim.char_impedances['bore']
-    zch_vt = sim.char_impedances['vocal']
-
-    this_dict = {'p_b':p_b,'p_vt':p_vt,#'hhb':hhb,'hhv':hhv,
-                 'pert_time':sim.pert_time,'p_blow':sim.p_blow_vec,
-                 'impresp_b':impresp, 'impresp_vt':impresp_vt, 'zch_b':zch_b, 'zch_vt':zch_vt,'js':js,
-                    'u':u, 'a':a}
-    
-    outfile = base_out_name + '_{}.pickle'.format(datetime.strftime(datetime.now(),'%Y%M%d_%H%M'))
-
-    with open(outfile,'wb') as f:
-        pickle.dump(this_dict,f)
-
+        sim = run_smooth_pert(js)
         
-p = multiprocessing.Pool(8)
+        p_b = sim.p_in + sim.p_out;
+        p_vt = sim.p_vt_in + sim.p_vt_out;
+
+        u = (sim.p_out - sim.p_in)/sim.zc_b;
+        u_sg = -(sim.p_vt_out - sim.p_vt_in)/sim.zc_vt
+
+        a = sim.a
+        f0=1/(sim.tracts['bore'].total_delay/sim.sr*2)
+        #hhb = HeterodyneHarmonic(p_b,sr=sim.sr,nwind=1024,nhop=256,f=f0)
+        #hhv = HeterodyneHarmonic(p_vt,sr=sim.sr,nwind=1024,nhop=256,f=f0)
+        zch_b = sim.char_impedances['bore']
+        zch_vt = sim.char_impedances['vocal']
+
+        this_dict = {'p_b':p_b,'p_vt':p_vt,#'hhb':hhb,'hhv':hhv,
+                    'pert_time':sim.pert_time,'p_blow':sim.p_blow_vec,
+                    'impresp_b':impresp, 'impresp_vt':impresp_vt, 'zch_b':zch_b, 'zch_vt':zch_vt,'js':js,
+                        'u':u, 'a':a}
+        
+        outfile = base_out_name + '_{}.pickle'.format(datetime.strftime(datetime.now(),'%Y%M%d_%H%M'))
+
+        with open(outfile,'wb') as f:
+            pickle.dump(this_dict,f)
+
+       
+
+mpq = multiprocessing.Queue(maxsize=4)
+iolock = multiprocessing.Lock()
+p = multiprocessing.Pool(8, initializer=md_worker, initargs=(mpq,iolock))
+
 jsg = js_generator()
-p.map(md_worker,jsg)
+for js in jsg:
+    mpq.put(js)
+    with iolock:
+        print("Queued")
+        
