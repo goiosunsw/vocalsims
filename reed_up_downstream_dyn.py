@@ -168,7 +168,7 @@ class ReedSimulation(object):
                 ta.append_tube(length=el['length'],radius=el['radius'],loss_multiplier=el['loss multiplier'])
             elif el['type'] == 'exponential horn':
                 horn_len = el['length']
-                input_rad = el['input radius']
+                input_rad = el['radius']
                 output_rad = el['output radius']
 
                 seg_len = ta.unit_length()*2
