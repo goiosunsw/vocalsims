@@ -1,10 +1,7 @@
 import sys
 from copy import deepcopy
-from reed_up_downstream_dyn import ReedSimulation, calc_fixed_point
+from reed_up_downstream_dyn import ReedSimulation
 from json_object import JSONObject
-from pypevoc.PVAnalysis import PV
-from pypevoc.Heterodyne import HeterodyneHarmonic
-from pypevoc.SoundUtils import FuncWind
 from scipy.optimize import fsolve
 import numpy as np
 import scipy.signal as sig
@@ -146,13 +143,14 @@ def md_worker(args):
 
     a = sim.a
     f0=1/(sim.tracts['bore'].total_delay/sim.sr*2)
-    hhb = HeterodyneHarmonic(p_b,sr=sim.sr,nwind=1024,nhop=256,f=f0)
-    hhv = HeterodyneHarmonic(p_vt,sr=sim.sr,nwind=1024,nhop=256,f=f0)
+    #hhb = HeterodyneHarmonic(p_b,sr=sim.sr,nwind=1024,nhop=256,f=f0)
+    #hhv = HeterodyneHarmonic(p_vt,sr=sim.sr,nwind=1024,nhop=256,f=f0)
     zch_b = sim.char_impedances['bore']
     zch_vt = sim.char_impedances['vocal']
 
-    this_dict = {'p_b':p_b,'p_vt':p_vt,'hhb':hhb,'hhv':hhv,'pert_time':sim.pert_time,'p_blow':sim.p_blow_vec,
-                'impresp_b':impresp, 'impresp_vt':impresp_vt, 'zch_b':zch_b, 'zch_vt':zch_vt,'js':js,
+    this_dict = {'p_b':p_b,'p_vt':p_vt,#'hhb':hhb,'hhv':hhv,
+                 'pert_time':sim.pert_time,'p_blow':sim.p_blow_vec,
+                 'impresp_b':impresp, 'impresp_vt':impresp_vt, 'zch_b':zch_b, 'zch_vt':zch_vt,'js':js,
                     'u':u, 'a':a}
     
     outfile = base_out_name + '_{}_{}_{}.pickle'.format(tongue_rad, main_len, pblow)

@@ -265,9 +265,9 @@ class croak_poleres(object):
         
         if self.fv is not None:
             if av is None:
-                self.av = q1
+                self.av = qv
             else:
-                self.av = a1
+                self.av = av
         # set mode amplitudes 
         self.set_modal_params()
         

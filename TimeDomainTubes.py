@@ -836,16 +836,24 @@ class RealTimeDuct(object):
             outs.extend(this_out)
         return(outs,ins)
 
-    def to_physical_dimensions(self, speed_of_sound=345., sampling_rate=48000):
+    def to_physical_dimensions(self, speed_of_sound=None, sampling_rate=None):
         radii = []
         lengths = [] 
         pre = 0
+        unit_length = self.unit_length(speed_of_sound=speed_of_sound, sampling_rate=sampling_rate)
         for rr, tube in self.iter_tubes():
             ll = (tube.dlin.get_delay())
             radii.append(rr)
-            lengths.append((ll+pre+.5)*speed_of_sound/sampling_rate)
+            lengths.append((ll+pre+.5)*unit_length)
             pre=.5 
         return radii, lengths
+
+    def unit_length(self, speed_of_sound=None, sampling_rate=None):
+        if speed_of_sound is None:
+            speed_of_sound = self.speed_of_sound
+        if sampling_rate is None:
+            sampling_rate = self.sr
+        return speed_of_sound/sampling_rate
 
     def reset(self):
         for tube in self.tubes:
