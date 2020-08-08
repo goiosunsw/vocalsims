@@ -2,9 +2,9 @@
     "description": "a clarinet with vocal tract and ranges for parameters",
     "version": "20200805",
     "simulation": {
-        "__sample rate": 192000,
-        "sample rate": 48000,
-        "duration": 0.4,
+        "sample rate": 192000,
+        "__sample rate": 48000,
+        "duration": 0.6,
         "callback every": 1024
     },
     "environment": {
@@ -189,7 +189,10 @@
             "frequency independent losses": 0.01,
             "elements": [{
                     "type": "cylinder",
-                    "length": 0.2,
+                    "length": {
+                        "_value": 0.2,
+                        "_range": [0.05, 0.3]
+                    }
                     "radius": 0.0075,
                     "loss multiplier": 1
                 },
