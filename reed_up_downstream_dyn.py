@@ -449,13 +449,14 @@ class ReedSimulation(object):
 
         self.finalize()
     
-    def set_probe(self, tract, tube_nbr=0, tube_idx=0):
+    def set_probe(self, tract, tube_nbr=0, tube_idx=0, label=""):
         rad = self.tracts[tract].radii[tube_nbr]
         zc = self.c * self.rho / (np.pi*rad**2)
         self.probes.append({'tract':tract,
                             'tube_nbr':tube_nbr,
                             'tube_idx':tube_idx,
                             'zc':zc,
+                            'label':label,
                             'in':[],
                             'out':[]})
     
