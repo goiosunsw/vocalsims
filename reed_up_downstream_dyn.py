@@ -128,6 +128,7 @@ class ReedSimulation(object):
         self.hdf5_file = None
         # impose blowing pressure at reed
         self.blow_at_reed = True
+        self.probes = []
 
     def reset(self):
         self.samp_no = 0
@@ -436,6 +437,9 @@ class ReedSimulation(object):
                     pert = False
                     self.pert_time = self.samp_no/self.sr
             self.simulation_tick(reverse=reverse)
+            if self.probes:
+                for probe in self.probes:
+                    self.update_probe(probe)
             if self.callback_every > 0:
                 if (self.samp_no >= self.last_callback + self.callback_every):
                     if self.hdf5_file:
@@ -444,6 +448,22 @@ class ReedSimulation(object):
             self.p_blow_vec.append(self.p_blow)
 
         self.finalize()
+    
+    def set_probe(self, tract, tube_nbr=0, tube_idx=0):
+        rad = self.tracts[tract].radii[tube_nbr]
+        zc = self.c * self.rho / (np.pi*rad**2)
+        self.probes.append({'tract':tract,
+                            'tube_nbr':tube_nbr,
+                            'tube_idx':tube_idx,
+                            'zc':zc,
+                            'in':[],
+                            'out':[]})
+    
+    def update_probe(self, probe):
+        tt = self.tracts[probe['tract']].tubes[probe['tube_nbr']]
+        delays = tt.dump_delays()
+        probe['out'].append(delays[0][probe['tube_idx']])
+        probe['in'].append(delays[1][probe['tube_idx']])
         
     def finalize(self):
         self.p_in = np.asarray(self.p_in)
