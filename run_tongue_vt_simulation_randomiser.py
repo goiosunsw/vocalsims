@@ -3,16 +3,21 @@ import random
 import types
 import collections
 import six
+import traceback
+import json
 from datetime import datetime
 
 from copy import deepcopy
 from reed_up_downstream_dyn import ReedSimulation
+from simulation_harmonic_transient_analyser import do_analysis
 from json_object import JSONObject
 from scipy.optimize import fsolve
 import numpy as np
 import scipy.signal as sig
 import pickle
 import multiprocessing
+
+nfft_ir = 2**14
 
 def json_path_get(js, addr):
     ret = js
@@ -147,38 +152,11 @@ def imp_resp(js, nfft=1024):
     return impresp, impresp_vt
 
 
-#jsfile = 'tongue_2seg_vt_open_simulation_with_tuning.json'
-jsfile = sys.argv[1]
-
-with open(jsfile) as f:
-    js = JSONObject(f)
-
-dx = js['environment/acoustic/speed of sound']/js['simulation/sample rate']
-n_main = 1
-
-#tongue_rad_list=[0.02,0.015,0.01,0.008,0.006,0.004,0.003,0.0015]
-#tongue_rad_list=[0.015,0.008,0.005,0.003]
-tongue_rad_vt_len_dict = {0.02: 0.09705464909865272,
- 0.015: 0.1326027397260274,
- 0.01: 0.16329209263348388,
- 0.008: 0.17943091668228756,
- 0.006: 0.18477824876547813,
- 0.004: 0.1893602987979393,
- 0.003: 0.19988585823287583,
- 0.0015: 0.19178082191780824}
-
-pblow_mult_list = [.9,1.0,1.05,1.1,1.2]
-pblow_traget_mul = 1.1
-
-len_range = 0.03
-nfft_ir = 2**14
-
-base_out_name = 'tongue_vt_open_tuning'
-
 
 def run_smooth_pert(js):
     sim = ReedSimulation()
     sim.from_json(js)
+    sim.set_probe('vocal', -1, 0, label='m')
 
     sr=sim.sr
     dp_per_samp = 1.0
@@ -221,6 +199,9 @@ def run_smooth_pert(js):
                 pert_finished=True
                 pert_samp_off = sim.samp_no
                 pert_t_off = cur_t
+
+        for probe in sim.probes:
+            sim.update_probe(probe)
                 
         p_blow.append(sim.p_blow)
         
@@ -231,11 +212,9 @@ def run_smooth_pert(js):
     sim.finalize()
     return sim
 
-def js_generator():
+def js_generator(js0):
     
     while True:
-        with open(jsfile) as f:
-            js0 = JSONObject(f)
 
         jsn = JSONObject()
         for k,v in apply_underscores(js0.to_python()):
@@ -245,6 +224,60 @@ def js_generator():
         yield jsn
 
 from time import sleep
+
+def simulate_js(js):
+    impresp,impresp_vt = imp_resp(js,nfft=nfft_ir)
+
+    sim = run_smooth_pert(js)
+    
+    p_b = sim.p_in + sim.p_out;
+    p_vt = sim.p_vt_in + sim.p_vt_out;
+
+    u = (sim.p_out - sim.p_in)/sim.zc_b;
+    u_sg = -(sim.p_vt_out - sim.p_vt_in)/sim.zc_vt
+
+    a = sim.a
+    f0=1/(sim.tracts['bore'].total_delay/sim.sr*2)
+    #hhb = HeterodyneHarmonic(p_b,sr=sim.sr,nwind=1024,nhop=256,f=f0)
+    #hhv = HeterodyneHarmonic(p_vt,sr=sim.sr,nwind=1024,nhop=256,f=f0)
+    zch_b = sim.char_impedances['bore']
+    zch_vt = sim.char_impedances['vocal']
+
+    this_dict = {'p_b':p_b,'p_vt':p_vt,#'hhb':hhb,'hhv':hhv,
+                'pert_time':sim.pert_time,'p_blow':sim.p_blow_vec,
+                'impresp_b':impresp, 'impresp_vt':impresp_vt, 'zch_b':zch_b, 'zch_vt':zch_vt,'js':js,
+                    'u':u, 'a':a}
+
+    for probe in sim.probes:
+        lab = probe['label']
+        this_dict['p_{}'.format(lab)] = np.array(probe['in']) + np.array(probe['out'])
+
+    return this_dict
+
+def work_on_js(js):
+    res = {'simulation':
+            {'start':datetime.strftime(datetime.now(),'%Y%m%d_%H%M%S'),
+             'params':js.to_python()}
+          }
+    try:
+        data = simulate_js(js)
+        res['simulation']['end'] = datetime.strftime(datetime.now(),'%Y%m%d_%H%M%S')
+    except Exception as e:
+        err = traceback.format_exc()
+        print(err)
+        res['simulation']['error'] = err
+        return res
+        
+    res['analysis'] = {}
+    try:
+        res['analysis'] = do_analysis(data)
+    except Exception as e:
+        err = traceback.format_exc()
+        print(err)
+        res['analysis']['error'] = err
+        return res
+    return res
+    
 
 def md_worker(q,iolock):
     while True:
@@ -260,42 +293,66 @@ def md_worker(q,iolock):
         with iolock:
             print("Processing")    
             print("tongue radius {}, vt length = {}, pblow = {}".format(tongue_rad,main_len,pblow))
-        impresp,impresp_vt = imp_resp(js,nfft=nfft_ir)
-
-        sim = run_smooth_pert(js)
+        res = work_on_js(js)
         
-        p_b = sim.p_in + sim.p_out;
-        p_vt = sim.p_vt_in + sim.p_vt_out;
+        outfile = base_out_name + '_{}.json'.format(datetime.strftime(datetime.now(),'%Y%m%d_%H%M%S'))
 
-        u = (sim.p_out - sim.p_in)/sim.zc_b;
-        u_sg = -(sim.p_vt_out - sim.p_vt_in)/sim.zc_vt
+        with open(outfile,'w') as f:
+            json.dump(res,f)
 
-        a = sim.a
-        f0=1/(sim.tracts['bore'].total_delay/sim.sr*2)
-        #hhb = HeterodyneHarmonic(p_b,sr=sim.sr,nwind=1024,nhop=256,f=f0)
-        #hhv = HeterodyneHarmonic(p_vt,sr=sim.sr,nwind=1024,nhop=256,f=f0)
-        zch_b = sim.char_impedances['bore']
-        zch_vt = sim.char_impedances['vocal']
+if  __name__ == '__main__': 
+    #jsfile = 'tongue_2seg_vt_open_simulation_with_tuning.json'
 
-        this_dict = {'p_b':p_b,'p_vt':p_vt,#'hhb':hhb,'hhv':hhv,
-                    'pert_time':sim.pert_time,'p_blow':sim.p_blow_vec,
-                    'impresp_b':impresp, 'impresp_vt':impresp_vt, 'zch_b':zch_b, 'zch_vt':zch_vt,'js':js,
-                        'u':u, 'a':a}
-        
-        outfile = base_out_name + '_{}.pickle'.format(datetime.strftime(datetime.now(),'%Y%M%d_%H%M%S'))
+    jsfile = sys.argv[1]
 
-        with open(outfile,'wb') as f:
-            pickle.dump(this_dict,f)
+    run_one = False
+    try:
+        if sys.argv[2] == '-1':
+            run_one = True
+    except IndexError:
+        pass
+            
 
-       
+    with open(jsfile) as f:
+        js = JSONObject(f)
 
-mpq = multiprocessing.Queue(maxsize=4)
-iolock = multiprocessing.Lock()
-p = multiprocessing.Pool(8, initializer=md_worker, initargs=(mpq,iolock))
+    dx = js['environment/acoustic/speed of sound']/js['simulation/sample rate']
+    n_main = 1
 
-jsg = js_generator()
-for js in jsg:
-    mpq.put(js)
-    with iolock:
-        print("Queued")
-        
+    #tongue_rad_list=[0.02,0.015,0.01,0.008,0.006,0.004,0.003,0.0015]
+    #tongue_rad_list=[0.015,0.008,0.005,0.003]
+    tongue_rad_vt_len_dict = {0.02: 0.09705464909865272,
+    0.015: 0.1326027397260274,
+    0.01: 0.16329209263348388,
+    0.008: 0.17943091668228756,
+    0.006: 0.18477824876547813,
+    0.004: 0.1893602987979393,
+    0.003: 0.19988585823287583,
+    0.0015: 0.19178082191780824}
+
+    pblow_mult_list = [.9,1.0,1.05,1.1,1.2]
+    pblow_traget_mul = 1.1
+
+    len_range = 0.03
+    nfft_ir = 2**14
+
+    jsg = js_generator(js)
+
+    if run_one:
+        js1 = jsg.__next__()
+        res = work_on_js(js1)
+        print(res)
+    else:
+        base_out_name = 'tongue_vt_open_tuning'
+
+            
+
+        mpq = multiprocessing.Queue(maxsize=4)
+        iolock = multiprocessing.Lock()
+        p = multiprocessing.Pool(8, initializer=md_worker, initargs=(mpq,iolock))
+
+        for js in jsg:
+            mpq.put(js)
+            with iolock:
+                print("Queued")
+                
