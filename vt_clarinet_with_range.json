@@ -2,8 +2,8 @@
     "description": "a clarinet with vocal tract and ranges for parameters",
     "version": "20200805",
     "simulation": {
-        "sample rate": 192000,
-        "__sample rate": 48000,
+        "__sample rate": 192000,
+        "sample rate": 48000,
         "duration": 0.6,
         "callback every": 1024
     },
