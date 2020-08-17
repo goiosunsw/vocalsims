@@ -1,5 +1,5 @@
 import numpy as np
-from real_time_filt import circ_filt, circ_filt_and_insert
+from .real_time_filter import circ_filt, circ_filt_and_insert
 
 def circ_filt_python(a,b,in_buff,out_buff,idx=0):
     """

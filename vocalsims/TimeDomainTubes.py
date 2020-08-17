@@ -1,8 +1,8 @@
 from collections import deque
 import numpy as np
 from scipy.special import struve, j1
-from RealTimeFilters import RealTimeFilter
-from DelayLines import IntegerDelayLine
+from .RealTimeFilters import RealTimeFilter
+from .DelayLines import IntegerDelayLine
 
 class VTLoss(object):
     """
@@ -69,7 +69,7 @@ class VTLoss(object):
 
         (tested for n_poles = 3, sr=48000, fmin=1., npts=1024)
         """
-        import vectfit_zd as vfzd 
+        import vocalsims.fitting.vectfit_zd as vfzd 
         import scipy.signal as sig
 
         if n_pts is None:
@@ -98,10 +98,10 @@ class VTLoss(object):
         poles = np.roots(a)
         zeros = np.roots(b)
 
-        self.b = b
-        self.a = a
+        self.b = np.real(b)
+        self.a = np.real(a)
 
-        return RealTimeFilter(b=b,a=a)
+        return RealTimeFilter(b=self.b,a=self.a)
 
 class ClosedReflectionHighPass(object):
     """

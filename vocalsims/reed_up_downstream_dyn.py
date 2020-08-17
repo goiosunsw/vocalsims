@@ -8,9 +8,9 @@ from copy import deepcopy
 
 from scipy.optimize import fsolve
 
-from pypevoc import PV
-import pympedance.Synthesiser as psyn
-import TimeDomainTubes as tdt
+#from pypevoc import PV
+#import pympedance.Synthesiser as psyn
+import vocalsims.TimeDomainTubes as tdt
 
 from tqdm import trange as trange
 

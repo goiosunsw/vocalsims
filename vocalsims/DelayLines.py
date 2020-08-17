@@ -1,5 +1,5 @@
 import numpy as np
-from delay_line_helper import delay_ticker
+from .delay_line_helper import delay_ticker
 
 class IntegerDelayLine(object):
     """
