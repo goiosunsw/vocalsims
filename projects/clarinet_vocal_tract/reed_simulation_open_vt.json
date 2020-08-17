@@ -1,0 +1,107 @@
+{
+    "description": "Reed simulation with open vocal tract and reed dynamics and non-linear reed force",
+    "version": "20200423",
+    "simulation": {
+        "sample rate": 48000,
+        "duration": 0.6,
+        "callback every": 1024
+    },
+    "environment": {
+        "acoustic": {
+            "_prefer": true,
+            "speed of sound": 346.7492013525034,
+            "density": 1.2,
+            "viscosity": 18.84e-6
+        },
+        "physical": {
+            "atmospheric pressure": 101500,
+            "temperature": 36.5,
+            "humidity": 100
+        },
+        "blowing pressure": {
+            "_comment": "blowing pressure is 'value' from start if ramp not enabled",
+            "value": 2500,
+            "ramp duration": 0.1,
+            "_choices_ramp_type": [
+                "linear",
+                "exponential"
+            ],
+            "ramp type": "exponential",
+            "ramp enabled": true
+        },
+        "reed": {
+            "_comment": "reed moves instantaneously if 'dynamic' is false, that means res. freq and q are not taken into account",
+            "stiffness": 5e8,
+            "resonance frequency": 1500,
+            "quality factor": 1.5,
+            "rest opening": 1e-5,
+            "dynamic": true,
+            "non-linear force": {
+                "_comment": "non-linear force kicks in when x/x0 > onset_opening fraction and is exponential like exp((x-xth)/(xc-xth))",
+                "_choices_model": [
+                    "disabled",
+                    "inverse_p",
+                    "log"
+                ],
+                "model": "inverse_p",
+                "onset pressure fraction": 0.9
+            }
+        },
+        "noise": {
+            "enabled": false,
+            "type": "white",
+            "scale": 0.005
+        },
+        "frequency dependent losses": true,
+        "vocal tract enabled": true
+    },
+    "perturbation": {
+        "_comment": "if blowing pressure is defined, then ramp stops when value is acheived and perturbation is triggered",
+        "factor": 1.01,
+        "time": 1.002,
+        "blowing pressure": 2100,
+        "_choices_variable": [
+            "reed rest opening",
+            "blowing pressure"
+        ],
+        "variable": "reed rest opening"
+    },
+    "tracts": {
+        "vocal": {
+            "description": "narrow tongue",
+            "frequency independent losses": 0.0,
+            "elements": [{
+                    "type": "cylinder",
+                    "length": 0.02,
+                    "radius": 0.005,
+                    "loss multiplier": 1
+                },
+                {
+                    "type": "cylinder",
+                    "length": 0.47,
+                    "radius": 0.015,
+                    "loss multiplier": 1
+                },
+                {
+                    "type": "termination",
+                    "kind": "open"
+                }
+            ]
+        },
+        "bore": {
+            "description": "single clarinet-like cylinder",
+            "frequency independent losses": 0.0,
+            "elements": [{
+                    "type": "cylinder",
+                    "length": 0.41,
+                    "radius": 0.0075,
+                    "loss multiplier": 10
+                },
+                {
+                    "type": "termination",
+                    "kind": "flanged"
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,68 @@
+{
+    "description": "Reed simulation with constant parameters",
+    "version": "20200304",
+    "simulation": {
+        "sample rate": 48000,
+        "duration": 0.1,
+        "callback every": 1024
+    },
+    "environment": {
+        "acoustic": {
+            "_prefer": true,
+            "speed of sound": 346.7492013525034,
+            "density": 1.2,
+            "viscosity": 18.84e-6
+        },
+        "physical": {
+            "atmospheric pressure": 101500,
+            "temperature": 36.5,
+            "humidity": 100
+        },
+        "blowing pressure": 4000,
+        "starting perturbation": 1.02,
+        "perturbation time": 0.002,
+        "reed": {
+            "stiffness": 5e8,
+            "rest opening": 1e-5
+        },
+        "noise": {
+            "enabled": false,
+            "type": "white",
+            "scale": 0.005
+        },
+        "frequency dependent losses": false,
+        "vocal tract enabled": true
+    },
+    "tracts": {
+        "vocal": {
+            "description": "single wide pipe",
+            "frequency independent losses": 0.05,
+            "elements": [{
+                    "type": "cylinder",
+                    "length": 0.15,
+                    "radius": 0.02,
+                    "loss_multiplier": 5
+                },
+                {
+                    "type": "termination",
+                    "kind": "open"
+                }
+            ]
+        },
+        "bore": {
+            "description": "single clarinet-like cylinder",
+            "frequency independent losses": 0.01,
+            "elements": [{
+                    "type": "cylinder",
+                    "length": 0.5,
+                    "radius": 0.0075,
+                    "loss_multiplier": 1
+                },
+                {
+                    "type": "termination",
+                    "kind": "open"
+                }
+            ]
+        }
+    } 
+}

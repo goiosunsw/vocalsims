@@ -1,0 +1,1246 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://example.com/example.json",
+    "type": "object",
+    "title": "The root schema",
+    "description": "The root schema comprises the entire JSON document.",
+    "default": {},
+    "required": [
+        "version",
+        "simulation",
+        "environment",
+        "tracts"
+    ],
+    "properties": {
+        "description": {
+            "$id": "#/properties/description",
+            "type": "string",
+            "title": "The description schema",
+            "description": "A description of the configuration file",
+            "default": "example simulation configuration file",
+            "examples": [
+                "a clarinet with vocal tract and ranges for parameters"
+            ]
+        },
+        "version": {
+            "$id": "#/properties/version",
+            "type": "string",
+            "title": "Program version",
+            "description": "The version of the program/ schema that the json file applies to",
+            "examples": [
+                "20200805"
+            ]
+        },
+        "simulation": {
+            "$id": "#/properties/simulation",
+            "type": "object",
+            "title": "General simulation properties",
+            "description": "Properties relating to the entire simulation",
+            "required": [
+                "sample rate",
+                "duration",
+            ],
+            "properties": {
+                "sample rate": {
+                    "$id": "#/properties/simulation/properties/sample%20rate",
+                    "type": "integer",
+                    "title": "Sample rate",
+                    "description": "Samples per second to be calculated",
+                    "default": 48000
+                },
+                "duration": {
+                    "$id": "#/properties/simulation/properties/duration",
+                    "type": "number",
+                    "title": "Duration of the simulation",
+                    "description": "Maximum duration in seconds",
+                    "default": 0.5
+                },
+                "callback every": {
+                    "$id": "#/properties/simulation/properties/callback%20every",
+                    "type": "integer",
+                    "title": "Number of samples before callback",
+                    "description": "The number of samples between calls to the callback function. Remove if callback not used",
+                    "default": 1024
+                }
+            },
+            "additionalProperties": true
+        },
+        "environment": {
+            "$id": "#/properties/environment",
+            "type": "object",
+            "title": "Generic physical properties",
+            "description": "Physical properties that affect the entire simulation",
+            "required": [
+                "physical",
+                "blowing pressure",
+                "reed",
+                "noise",
+                "frequency dependent losses",
+                "vocal tract enabled"
+            ],
+            "properties": {
+                "acoustic": {
+                    "$id": "#/properties/environment/properties/acoustic",
+                    "type": "object",
+                    "title": "acoustic properties",
+                    "description": "Properties of the acoustic environment. These can be replaced by physical properties from which acoustic properties are calculated",
+                    "required": [
+                        "_prefer",
+                        "speed of sound",
+                        "density",
+                        "viscosity"
+                    ],
+                    "properties": {
+                        "_prefer": {
+                            "$id": "#/properties/environment/properties/acoustic/properties/_prefer",
+                            "type": "boolean",
+                            "title": "Acoustics override",
+                            "description": "Whether these properties are preferred over the physical properties",
+                            "default": true,
+                        },
+                        "speed of sound": {
+                            "$id": "#/properties/environment/properties/acoustic/properties/speed%20of%20sound",
+                            "type": "number",
+                            "title": "Speed of sound",
+                            "description": "The speed of sound in m/s",
+                            "default": 346.7492013525034
+                        },
+                        "density": {
+                            "$id": "#/properties/environment/properties/acoustic/properties/density",
+                            "type": "number",
+                            "title": "Air density",
+                            "description": "The density of the air in kg/m3",
+                            "default": 1.
+                        },
+                        "viscosity": {
+                            "$id": "#/properties/environment/properties/acoustic/properties/viscosity",
+                            "type": "number",
+                            "title": "Air viscosity",
+                            "description": "The viscosity of the air in SI units",
+                            "default": 1.884e-05
+                        }
+                    },
+                    "additionalProperties": true
+                },
+                "physical": {
+                    "$id": "#/properties/environment/properties/physical",
+                    "type": "object",
+                    "title": "Physical properties",
+                    "description": "Physical properties of the environment from which acoustic properties can be calculated",
+                    "required": [
+                        "atmospheric pressure",
+                        "temperature",
+                        "humidity"
+                    ],
+                    "properties": {
+                        "atmospheric pressure": {
+                            "$id": "#/properties/environment/properties/physical/properties/atmospheric%20pressure",
+                            "type": "number",
+                            "title": "Atmospheric pressure",
+                            "description": "Atmospheric pressure of the air in Pa",
+                            "default": 101500.0
+                        },
+                        "temperature": {
+                            "$id": "#/properties/environment/properties/physical/properties/temperature",
+                            "type": "number",
+                            "title": "Temperature",
+                            "description": "Temperature in degree C. Remember a clarinet is played by a human!",
+                            "default": 36.5
+                        },
+                        "humidity": {
+                            "$id": "#/properties/environment/properties/physical/properties/humidity",
+                            "type": "number",
+                            "title": "Relative humidity",
+                            "description": "Relative humidity of the air in %",
+                            "default": 100.0
+                        }
+                    },
+                    "additionalProperties": true
+                },
+                "blowing pressure": {
+                    "$id": "#/properties/environment/properties/blowing%20pressure",
+                    "type": "object",
+                    "title": "Blowing pressure",
+                    "description": "Multiple parameters relating to the control of the blowing pressure. Blowing pressure is 'value' from start if ramp is not enabled",
+                    "required": [
+                        "value"
+                    ],
+                    "properties": {
+                        "value": {
+                            "$id": "#/properties/environment/properties/blowing%20pressure/properties/value",
+                            "type": "number",
+                            "title": "Value of the blowing pressure at end of ramp",
+                            "description": "Value of the blowing pressure at end of ramp",
+                            "default": 2400.0
+                        },
+                        "ramp duration": {
+                            "$id": "#/properties/environment/properties/blowing%20pressure/properties/ramp%20duration",
+                            "type": "number",
+                            "title": "Duration of ramp",
+                            "description": "Duration of ramp. If ramp is linear the blowing pressure will have the constant value after this time. For exponential ramps this value is the time constant",
+                            "default": 0.1
+                        },
+                        "ramp type": {
+                            "$id": "#/properties/environment/properties/blowing%20pressure/properties/ramp%20type",
+                            "type": "string",
+                            "title": "ramp type",
+                            "description": "Ramp type to use for blowing pressure increase",
+                            "default": "exponential",
+                            "enum": ["exponential", "linear"]
+                        },
+                        "ramp enabled": {
+                            "$id": "#/properties/environment/properties/blowing%20pressure/properties/ramp%20enabled",
+                            "type": "boolean",
+                            "title": "Enable ramp",
+                            "description": "Whether to use ramp or depart from final value (if false)",
+                            "default": true
+                        }
+                    },
+                    "additionalProperties": true
+                },
+                "reed": {
+                    "$id": "#/properties/environment/properties/reed",
+                    "type": "object",
+                    "title": "Reed properties",
+                    "description": "Properties of the reed reed moves instantaneously if 'dynamic' is false, that means res. freq and q are not taken into account ",
+                    "required": [
+                        "stiffness",
+                        "resonance frequency",
+                        "quality factor",
+                        "rest opening",
+                        "dynamic",
+                        "non-linear force"
+                    ],
+                    "properties": {
+                        "stiffness": {
+                            "$id": "#/properties/environment/properties/reed/properties/stiffness",
+                            "type": "number",
+                            "title": "Reed stiffness",
+                            "description": "Stiffness of the reed in Pa/m",
+                            "default": 500000000.0
+                        },
+                        "resonance frequency": {
+                            "$id": "#/properties/environment/properties/reed/properties/resonance%20frequency",
+                            "type": "object",
+                            "title": "Resonance frequency",
+                            "description": "The resonance frequency of the reed in Hz",
+                            "default": {},
+                            "examples": [{
+                                "_value": 1500,
+                                "_range": [
+                                    500,
+                                    4000
+                                ]
+                            }],
+                            "required": [
+                                "_value",
+                                "_range"
+                            ],
+                            "properties": {
+                                "_value": {
+                                    "$id": "#/properties/environment/properties/reed/properties/resonance%20frequency/properties/_value",
+                                    "type": "integer",
+                                    "title": "The _value schema",
+                                    "description": "An explanation about the purpose of this instance.",
+                                    "default": 0,
+                                    "examples": [
+                                        1500
+                                    ]
+                                },
+                                "_range": {
+                                    "$id": "#/properties/environment/properties/reed/properties/resonance%20frequency/properties/_range",
+                                    "type": "array",
+                                    "title": "The _range schema",
+                                    "description": "An explanation about the purpose of this instance.",
+                                    "default": [],
+                                    "examples": [
+                                        [
+                                            500,
+                                            4000
+                                        ]
+                                    ],
+                                    "additionalItems": true,
+                                    "items": {
+                                        "$id": "#/properties/environment/properties/reed/properties/resonance%20frequency/properties/_range/items",
+                                        "anyOf": [{
+                                            "$id": "#/properties/environment/properties/reed/properties/resonance%20frequency/properties/_range/items/anyOf/0",
+                                            "type": "integer",
+                                            "title": "The first anyOf schema",
+                                            "description": "An explanation about the purpose of this instance.",
+                                            "default": 0,
+                                            "examples": [
+                                                500,
+                                                4000
+                                            ]
+                                        }]
+                                    }
+                                }
+                            },
+                            "additionalProperties": true
+                        },
+                        "quality factor": {
+                            "$id": "#/properties/environment/properties/reed/properties/quality%20factor",
+                            "type": "object",
+                            "title": "The quality factor schema",
+                            "description": "An explanation about the purpose of this instance.",
+                            "default": {},
+                            "examples": [{
+                                "_value": 0.7,
+                                "_range": [
+                                    0.5,
+                                    2.0
+                                ]
+                            }],
+                            "required": [
+                                "_value",
+                                "_range"
+                            ],
+                            "properties": {
+                                "_value": {
+                                    "$id": "#/properties/environment/properties/reed/properties/quality%20factor/properties/_value",
+                                    "type": "number",
+                                    "title": "The _value schema",
+                                    "description": "An explanation about the purpose of this instance.",
+                                    "default": 0.0,
+                                    "examples": [
+                                        0.7
+                                    ]
+                                },
+                                "_range": {
+                                    "$id": "#/properties/environment/properties/reed/properties/quality%20factor/properties/_range",
+                                    "type": "array",
+                                    "title": "The _range schema",
+                                    "description": "An explanation about the purpose of this instance.",
+                                    "default": [],
+                                    "examples": [
+                                        [
+                                            0.5,
+                                            2.0
+                                        ]
+                                    ],
+                                    "additionalItems": true,
+                                    "items": {
+                                        "$id": "#/properties/environment/properties/reed/properties/quality%20factor/properties/_range/items",
+                                        "anyOf": [{
+                                            "$id": "#/properties/environment/properties/reed/properties/quality%20factor/properties/_range/items/anyOf/0",
+                                            "type": "number",
+                                            "title": "The first anyOf schema",
+                                            "description": "An explanation about the purpose of this instance.",
+                                            "default": 0.0,
+                                            "examples": [
+                                                0.5,
+                                                2.0
+                                            ]
+                                        }]
+                                    }
+                                }
+                            },
+                            "additionalProperties": true
+                        },
+                        "rest opening": {
+                            "$id": "#/properties/environment/properties/reed/properties/rest%20opening",
+                            "type": "object",
+                            "title": "The rest opening schema",
+                            "description": "An explanation about the purpose of this instance.",
+                            "default": {},
+                            "examples": [{
+                                "_value": 1e-05,
+                                "_range": [
+                                    2e-06,
+                                    2e-05
+                                ]
+                            }],
+                            "required": [
+                                "_value",
+                                "_range"
+                            ],
+                            "properties": {
+                                "_value": {
+                                    "$id": "#/properties/environment/properties/reed/properties/rest%20opening/properties/_value",
+                                    "type": "number",
+                                    "title": "The _value schema",
+                                    "description": "An explanation about the purpose of this instance.",
+                                    "default": 0.0,
+                                    "examples": [
+                                        1e-05
+                                    ]
+                                },
+                                "_range": {
+                                    "$id": "#/properties/environment/properties/reed/properties/rest%20opening/properties/_range",
+                                    "type": "array",
+                                    "title": "The _range schema",
+                                    "description": "An explanation about the purpose of this instance.",
+                                    "default": [],
+                                    "examples": [
+                                        [
+                                            2e-06,
+                                            2e-05
+                                        ]
+                                    ],
+                                    "additionalItems": true,
+                                    "items": {
+                                        "$id": "#/properties/environment/properties/reed/properties/rest%20opening/properties/_range/items",
+                                        "anyOf": [{
+                                            "$id": "#/properties/environment/properties/reed/properties/rest%20opening/properties/_range/items/anyOf/0",
+                                            "type": "number",
+                                            "title": "The first anyOf schema",
+                                            "description": "An explanation about the purpose of this instance.",
+                                            "default": 0.0,
+                                            "examples": [
+                                                2e-06,
+                                                2e-05
+                                            ]
+                                        }]
+                                    }
+                                }
+                            },
+                            "additionalProperties": true
+                        },
+                        "dynamic": {
+                            "$id": "#/properties/environment/properties/reed/properties/dynamic",
+                            "type": "boolean",
+                            "title": "The dynamic schema",
+                            "description": "An explanation about the purpose of this instance.",
+                            "default": false,
+                            "examples": [
+                                true
+                            ]
+                        },
+                        "non-linear force": {
+                            "$id": "#/properties/environment/properties/reed/properties/non-linear%20force",
+                            "type": "object",
+                            "title": "The non-linear force schema",
+                            "description": "An explanation about the purpose of this instance.",
+                            "default": {},
+                            "examples": [{
+                                "_comment": "non-linear force kicks in when x/x0 > onset_opening fraction and is exponential like exp((x-xth)/(xc-xth))",
+                                "_choices_model": [
+                                    "disabled",
+                                    "inverse_p",
+                                    "log"
+                                ],
+                                "model": "inverse_p",
+                                "onset pressure fraction": 0.9
+                            }],
+                            "required": [
+                                "_comment",
+                                "_choices_model",
+                                "model",
+                                "onset pressure fraction"
+                            ],
+                            "properties": {
+                                "_comment": {
+                                    "$id": "#/properties/environment/properties/reed/properties/non-linear%20force/properties/_comment",
+                                    "type": "string",
+                                    "title": "The _comment schema",
+                                    "description": "An explanation about the purpose of this instance.",
+                                    "default": "",
+                                    "examples": [
+                                        "non-linear force kicks in when x/x0 > onset_opening fraction and is exponential like exp((x-xth)/(xc-xth))"
+                                    ]
+                                },
+                                "_choices_model": {
+                                    "$id": "#/properties/environment/properties/reed/properties/non-linear%20force/properties/_choices_model",
+                                    "type": "array",
+                                    "title": "The _choices_model schema",
+                                    "description": "An explanation about the purpose of this instance.",
+                                    "default": [],
+                                    "examples": [
+                                        [
+                                            "disabled",
+                                            "inverse_p"
+                                        ]
+                                    ],
+                                    "additionalItems": true,
+                                    "items": {
+                                        "$id": "#/properties/environment/properties/reed/properties/non-linear%20force/properties/_choices_model/items",
+                                        "anyOf": [{
+                                            "$id": "#/properties/environment/properties/reed/properties/non-linear%20force/properties/_choices_model/items/anyOf/0",
+                                            "type": "string",
+                                            "title": "The first anyOf schema",
+                                            "description": "An explanation about the purpose of this instance.",
+                                            "default": "",
+                                            "examples": [
+                                                "disabled",
+                                                "inverse_p"
+                                            ]
+                                        }]
+                                    }
+                                },
+                                "model": {
+                                    "$id": "#/properties/environment/properties/reed/properties/non-linear%20force/properties/model",
+                                    "type": "string",
+                                    "title": "The model schema",
+                                    "description": "An explanation about the purpose of this instance.",
+                                    "default": "",
+                                    "examples": [
+                                        "inverse_p"
+                                    ]
+                                },
+                                "onset pressure fraction": {
+                                    "$id": "#/properties/environment/properties/reed/properties/non-linear%20force/properties/onset%20pressure%20fraction",
+                                    "type": "number",
+                                    "title": "The onset pressure fraction schema",
+                                    "description": "An explanation about the purpose of this instance.",
+                                    "default": 0.0,
+                                    "examples": [
+                                        0.9
+                                    ]
+                                }
+                            },
+                            "additionalProperties": true
+                        }
+                    },
+                    "additionalProperties": true
+                },
+                "noise": {
+                    "$id": "#/properties/environment/properties/noise",
+                    "type": "object",
+                    "title": "The noise schema",
+                    "description": "An explanation about the purpose of this instance.",
+                    "default": {},
+                    "examples": [{
+                        "enabled": false,
+                        "type": "white",
+                        "scale": 0.005
+                    }],
+                    "required": [
+                        "enabled",
+                        "type",
+                        "scale"
+                    ],
+                    "properties": {
+                        "enabled": {
+                            "$id": "#/properties/environment/properties/noise/properties/enabled",
+                            "type": "boolean",
+                            "title": "The enabled schema",
+                            "description": "An explanation about the purpose of this instance.",
+                            "default": false,
+                            "examples": [
+                                false
+                            ]
+                        },
+                        "type": {
+                            "$id": "#/properties/environment/properties/noise/properties/type",
+                            "type": "string",
+                            "title": "The type schema",
+                            "description": "An explanation about the purpose of this instance.",
+                            "default": "",
+                            "examples": [
+                                "white"
+                            ]
+                        },
+                        "scale": {
+                            "$id": "#/properties/environment/properties/noise/properties/scale",
+                            "type": "number",
+                            "title": "The scale schema",
+                            "description": "An explanation about the purpose of this instance.",
+                            "default": 0.0,
+                            "examples": [
+                                0.005
+                            ]
+                        }
+                    },
+                    "additionalProperties": true
+                },
+                "frequency dependent losses": {
+                    "$id": "#/properties/environment/properties/frequency%20dependent%20losses",
+                    "type": "boolean",
+                    "title": "The frequency dependent losses schema",
+                    "description": "An explanation about the purpose of this instance.",
+                    "default": false,
+                    "examples": [
+                        true
+                    ]
+                },
+                "vocal tract enabled": {
+                    "$id": "#/properties/environment/properties/vocal%20tract%20enabled",
+                    "type": "boolean",
+                    "title": "The vocal tract enabled schema",
+                    "description": "An explanation about the purpose of this instance.",
+                    "default": false,
+                    "examples": [
+                        true
+                    ]
+                }
+            },
+            "additionalProperties": true
+        },
+        "perturbation": {
+            "$id": "#/properties/perturbation",
+            "type": "object",
+            "title": "The perturbation schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": {},
+            "examples": [{
+                "_comment": "if blowing pressure is defined, then ramp stops when value is acheived and perturbation is triggered",
+                "factor": 1.01,
+                "time": 1.002,
+                "blowing pressure": {
+                    "_value": 2160.0,
+                    "_range": [
+                        1800.0,
+                        2500.0
+                    ]
+                },
+                "_choices_variable": [
+                    "reed rest opening",
+                    "blowing pressure"
+                ],
+                "variable": "reed rest opening"
+            }],
+            "required": [
+                "_comment",
+                "factor",
+                "time",
+                "blowing pressure",
+                "_choices_variable",
+                "variable"
+            ],
+            "properties": {
+                "_comment": {
+                    "$id": "#/properties/perturbation/properties/_comment",
+                    "type": "string",
+                    "title": "The _comment schema",
+                    "description": "An explanation about the purpose of this instance.",
+                    "default": "",
+                    "examples": [
+                        "if blowing pressure is defined, then ramp stops when value is acheived and perturbation is triggered"
+                    ]
+                },
+                "factor": {
+                    "$id": "#/properties/perturbation/properties/factor",
+                    "type": "number",
+                    "title": "The factor schema",
+                    "description": "An explanation about the purpose of this instance.",
+                    "default": 0.0,
+                    "examples": [
+                        1.01
+                    ]
+                },
+                "time": {
+                    "$id": "#/properties/perturbation/properties/time",
+                    "type": "number",
+                    "title": "The time schema",
+                    "description": "An explanation about the purpose of this instance.",
+                    "default": 0.0,
+                    "examples": [
+                        1.002
+                    ]
+                },
+                "blowing pressure": {
+                    "$id": "#/properties/perturbation/properties/blowing%20pressure",
+                    "type": "object",
+                    "title": "The blowing pressure schema",
+                    "description": "An explanation about the purpose of this instance.",
+                    "default": {},
+                    "examples": [{
+                        "_value": 2160.0,
+                        "_range": [
+                            1800.0,
+                            2500.0
+                        ]
+                    }],
+                    "required": [
+                        "_value",
+                        "_range"
+                    ],
+                    "properties": {
+                        "_value": {
+                            "$id": "#/properties/perturbation/properties/blowing%20pressure/properties/_value",
+                            "type": "number",
+                            "title": "The _value schema",
+                            "description": "An explanation about the purpose of this instance.",
+                            "default": 0.0,
+                            "examples": [
+                                2160.0
+                            ]
+                        },
+                        "_range": {
+                            "$id": "#/properties/perturbation/properties/blowing%20pressure/properties/_range",
+                            "type": "array",
+                            "title": "The _range schema",
+                            "description": "An explanation about the purpose of this instance.",
+                            "default": [],
+                            "examples": [
+                                [
+                                    1800.0,
+                                    2500.0
+                                ]
+                            ],
+                            "additionalItems": true,
+                            "items": {
+                                "$id": "#/properties/perturbation/properties/blowing%20pressure/properties/_range/items",
+                                "anyOf": [{
+                                    "$id": "#/properties/perturbation/properties/blowing%20pressure/properties/_range/items/anyOf/0",
+                                    "type": "number",
+                                    "title": "The first anyOf schema",
+                                    "description": "An explanation about the purpose of this instance.",
+                                    "default": 0.0,
+                                    "examples": [
+                                        1800.0,
+                                        2500.0
+                                    ]
+                                }]
+                            }
+                        }
+                    },
+                    "additionalProperties": true
+                },
+                "_choices_variable": {
+                    "$id": "#/properties/perturbation/properties/_choices_variable",
+                    "type": "array",
+                    "title": "The _choices_variable schema",
+                    "description": "An explanation about the purpose of this instance.",
+                    "default": [],
+                    "examples": [
+                        [
+                            "reed rest opening",
+                            "blowing pressure"
+                        ]
+                    ],
+                    "additionalItems": true,
+                    "items": {
+                        "$id": "#/properties/perturbation/properties/_choices_variable/items",
+                        "anyOf": [{
+                            "$id": "#/properties/perturbation/properties/_choices_variable/items/anyOf/0",
+                            "type": "string",
+                            "title": "The first anyOf schema",
+                            "description": "An explanation about the purpose of this instance.",
+                            "default": "",
+                            "examples": [
+                                "reed rest opening",
+                                "blowing pressure"
+                            ]
+                        }]
+                    }
+                },
+                "variable": {
+                    "$id": "#/properties/perturbation/properties/variable",
+                    "type": "string",
+                    "title": "The variable schema",
+                    "description": "An explanation about the purpose of this instance.",
+                    "default": "",
+                    "examples": [
+                        "reed rest opening"
+                    ]
+                }
+            },
+            "additionalProperties": true
+        },
+        "tracts": {
+            "$id": "#/properties/tracts",
+            "type": "object",
+            "title": "The tracts schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": {},
+            "examples": [{
+                "vocal": {
+                    "_link": "tracts/vocal_step"
+                },
+                "vocal_step": {
+                    "description": "narrow tongue",
+                    "frequency independent losses": 0.05,
+                    "elements": [{
+                            "type": "cylinder",
+                            "length": 0.04,
+                            "radius": {
+                                "_value": 0.0015000000000000007,
+                                "_range": [
+                                    0.001,
+                                    0.02
+                                ]
+                            },
+                            "loss multiplier": 5
+                        },
+                        {
+                            "type": "cylinder",
+                            "length": 0.2,
+                            "radius": 0.01,
+                            "loss multiplier": 5
+                        },
+                        {
+                            "type": "termination",
+                            "kind": "open"
+                        }
+                    ]
+                },
+                "bore": {
+                    "description": "single clarinet-like cylinder",
+                    "frequency independent losses": 0.01,
+                    "elements": [{
+                            "type": "cylinder",
+                            "length": 0.2,
+                            "radius": 0.0075,
+                            "loss multiplier": 1
+                        },
+                        {
+                            "type": "termination",
+                            "kind": "flanged"
+                        }
+                    ]
+                }
+            }],
+            "required": [
+                "vocal",
+                "vocal_step",
+                "bore"
+            ],
+            "properties": {
+                "vocal": {
+                    "$id": "#/properties/tracts/properties/vocal",
+                    "type": "object",
+                    "title": "The vocal schema",
+                    "description": "An explanation about the purpose of this instance.",
+                    "default": {},
+                    "examples": [{
+                        "_link": "tracts/vocal_step"
+                    }],
+                    "required": [
+                        "_link"
+                    ],
+                    "properties": {
+                        "_link": {
+                            "$id": "#/properties/tracts/properties/vocal/properties/_link",
+                            "type": "string",
+                            "title": "The _link schema",
+                            "description": "An explanation about the purpose of this instance.",
+                            "default": "",
+                            "examples": [
+                                "tracts/vocal_step"
+                            ]
+                        }
+                    },
+                    "additionalProperties": true
+                },
+                "vocal_step": {
+                    "$id": "#/properties/tracts/properties/vocal_step",
+                    "type": "object",
+                    "title": "The vocal_step schema",
+                    "description": "An explanation about the purpose of this instance.",
+                    "default": {},
+                    "examples": [{
+                        "description": "narrow tongue",
+                        "frequency independent losses": 0.05,
+                        "elements": [{
+                                "type": "cylinder",
+                                "length": 0.04,
+                                "radius": {
+                                    "_value": 0.0015000000000000007,
+                                    "_range": [
+                                        0.001,
+                                        0.02
+                                    ]
+                                },
+                                "loss multiplier": 5
+                            },
+                            {
+                                "type": "cylinder",
+                                "length": 0.2,
+                                "radius": 0.01,
+                                "loss multiplier": 5
+                            },
+                            {
+                                "type": "termination",
+                                "kind": "open"
+                            }
+                        ]
+                    }],
+                    "required": [
+                        "description",
+                        "frequency independent losses",
+                        "elements"
+                    ],
+                    "properties": {
+                        "description": {
+                            "$id": "#/properties/tracts/properties/vocal_step/properties/description",
+                            "type": "string",
+                            "title": "The description schema",
+                            "description": "An explanation about the purpose of this instance.",
+                            "default": "",
+                            "examples": [
+                                "narrow tongue"
+                            ]
+                        },
+                        "frequency independent losses": {
+                            "$id": "#/properties/tracts/properties/vocal_step/properties/frequency%20independent%20losses",
+                            "type": "number",
+                            "title": "The frequency independent losses schema",
+                            "description": "An explanation about the purpose of this instance.",
+                            "default": 0.0,
+                            "examples": [
+                                0.05
+                            ]
+                        },
+                        "elements": {
+                            "$id": "#/properties/tracts/properties/vocal_step/properties/elements",
+                            "type": "array",
+                            "title": "The elements schema",
+                            "description": "An explanation about the purpose of this instance.",
+                            "default": [],
+                            "examples": [
+                                [{
+                                        "type": "cylinder",
+                                        "length": 0.04,
+                                        "radius": {
+                                            "_value": 0.0015000000000000007,
+                                            "_range": [
+                                                0.001,
+                                                0.02
+                                            ]
+                                        },
+                                        "loss multiplier": 5
+                                    },
+                                    {
+                                        "type": "cylinder",
+                                        "length": 0.2,
+                                        "radius": 0.01,
+                                        "loss multiplier": 5
+                                    }
+                                ]
+                            ],
+                            "additionalItems": true,
+                            "items": {
+                                "$id": "#/properties/tracts/properties/vocal_step/properties/elements/items",
+                                "anyOf": [{
+                                        "$id": "#/properties/tracts/properties/vocal_step/properties/elements/items/anyOf/0",
+                                        "type": "object",
+                                        "title": "The first anyOf schema",
+                                        "description": "An explanation about the purpose of this instance.",
+                                        "default": {},
+                                        "examples": [{
+                                            "type": "cylinder",
+                                            "length": 0.04,
+                                            "radius": {
+                                                "_value": 0.0015000000000000007,
+                                                "_range": [
+                                                    0.001,
+                                                    0.02
+                                                ]
+                                            },
+                                            "loss multiplier": 5
+                                        }],
+                                        "required": [
+                                            "type",
+                                            "length",
+                                            "radius",
+                                            "loss multiplier"
+                                        ],
+                                        "properties": {
+                                            "type": {
+                                                "$id": "#/properties/tracts/properties/vocal_step/properties/elements/items/anyOf/0/properties/type",
+                                                "type": "string",
+                                                "title": "The type schema",
+                                                "description": "An explanation about the purpose of this instance.",
+                                                "default": "",
+                                                "examples": [
+                                                    "cylinder"
+                                                ]
+                                            },
+                                            "length": {
+                                                "$id": "#/properties/tracts/properties/vocal_step/properties/elements/items/anyOf/0/properties/length",
+                                                "type": "number",
+                                                "title": "The length schema",
+                                                "description": "An explanation about the purpose of this instance.",
+                                                "default": 0.0,
+                                                "examples": [
+                                                    0.04
+                                                ]
+                                            },
+                                            "radius": {
+                                                "$id": "#/properties/tracts/properties/vocal_step/properties/elements/items/anyOf/0/properties/radius",
+                                                "type": "object",
+                                                "title": "The radius schema",
+                                                "description": "An explanation about the purpose of this instance.",
+                                                "default": {},
+                                                "examples": [{
+                                                    "_value": 0.0015000000000000007,
+                                                    "_range": [
+                                                        0.001,
+                                                        0.02
+                                                    ]
+                                                }],
+                                                "required": [
+                                                    "_value",
+                                                    "_range"
+                                                ],
+                                                "properties": {
+                                                    "_value": {
+                                                        "$id": "#/properties/tracts/properties/vocal_step/properties/elements/items/anyOf/0/properties/radius/properties/_value",
+                                                        "type": "number",
+                                                        "title": "The _value schema",
+                                                        "description": "An explanation about the purpose of this instance.",
+                                                        "default": 0.0,
+                                                        "examples": [
+                                                            0.0015000000000000007
+                                                        ]
+                                                    },
+                                                    "_range": {
+                                                        "$id": "#/properties/tracts/properties/vocal_step/properties/elements/items/anyOf/0/properties/radius/properties/_range",
+                                                        "type": "array",
+                                                        "title": "The _range schema",
+                                                        "description": "An explanation about the purpose of this instance.",
+                                                        "default": [],
+                                                        "examples": [
+                                                            [
+                                                                0.001,
+                                                                0.02
+                                                            ]
+                                                        ],
+                                                        "additionalItems": true,
+                                                        "items": {
+                                                            "$id": "#/properties/tracts/properties/vocal_step/properties/elements/items/anyOf/0/properties/radius/properties/_range/items",
+                                                            "anyOf": [{
+                                                                "$id": "#/properties/tracts/properties/vocal_step/properties/elements/items/anyOf/0/properties/radius/properties/_range/items/anyOf/0",
+                                                                "type": "number",
+                                                                "title": "The first anyOf schema",
+                                                                "description": "An explanation about the purpose of this instance.",
+                                                                "default": 0.0,
+                                                                "examples": [
+                                                                    0.001,
+                                                                    0.02
+                                                                ]
+                                                            }]
+                                                        }
+                                                    }
+                                                },
+                                                "additionalProperties": true
+                                            },
+                                            "loss multiplier": {
+                                                "$id": "#/properties/tracts/properties/vocal_step/properties/elements/items/anyOf/0/properties/loss%20multiplier",
+                                                "type": "integer",
+                                                "title": "The loss multiplier schema",
+                                                "description": "An explanation about the purpose of this instance.",
+                                                "default": 0,
+                                                "examples": [
+                                                    5
+                                                ]
+                                            }
+                                        },
+                                        "additionalProperties": true
+                                    },
+                                    {
+                                        "$id": "#/properties/tracts/properties/vocal_step/properties/elements/items/anyOf/1",
+                                        "type": "object",
+                                        "title": "The second anyOf schema",
+                                        "description": "An explanation about the purpose of this instance.",
+                                        "default": {},
+                                        "examples": [{
+                                            "type": "termination",
+                                            "kind": "open"
+                                        }],
+                                        "required": [
+                                            "type",
+                                            "kind"
+                                        ],
+                                        "properties": {
+                                            "type": {
+                                                "$id": "#/properties/tracts/properties/vocal_step/properties/elements/items/anyOf/1/properties/type",
+                                                "type": "string",
+                                                "title": "The type schema",
+                                                "description": "An explanation about the purpose of this instance.",
+                                                "default": "",
+                                                "examples": [
+                                                    "termination"
+                                                ]
+                                            },
+                                            "kind": {
+                                                "$id": "#/properties/tracts/properties/vocal_step/properties/elements/items/anyOf/1/properties/kind",
+                                                "type": "string",
+                                                "title": "The kind schema",
+                                                "description": "An explanation about the purpose of this instance.",
+                                                "default": "",
+                                                "examples": [
+                                                    "open"
+                                                ]
+                                            }
+                                        },
+                                        "additionalProperties": true
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "additionalProperties": true
+                },
+                "bore": {
+                    "$id": "#/properties/tracts/properties/bore",
+                    "type": "object",
+                    "title": "The bore schema",
+                    "description": "An explanation about the purpose of this instance.",
+                    "default": {},
+                    "examples": [{
+                        "description": "single clarinet-like cylinder",
+                        "frequency independent losses": 0.01,
+                        "elements": [{
+                                "type": "cylinder",
+                                "length": 0.2,
+                                "radius": 0.0075,
+                                "loss multiplier": 1
+                            },
+                            {
+                                "type": "termination",
+                                "kind": "flanged"
+                            }
+                        ]
+                    }],
+                    "required": [
+                        "description",
+                        "frequency independent losses",
+                        "elements"
+                    ],
+                    "properties": {
+                        "description": {
+                            "$id": "#/properties/tracts/properties/bore/properties/description",
+                            "type": "string",
+                            "title": "The description schema",
+                            "description": "An explanation about the purpose of this instance.",
+                            "default": "",
+                            "examples": [
+                                "single clarinet-like cylinder"
+                            ]
+                        },
+                        "frequency independent losses": {
+                            "$id": "#/properties/tracts/properties/bore/properties/frequency%20independent%20losses",
+                            "type": "number",
+                            "title": "The frequency independent losses schema",
+                            "description": "An explanation about the purpose of this instance.",
+                            "default": 0.0,
+                            "examples": [
+                                0.01
+                            ]
+                        },
+                        "elements": {
+                            "$id": "#/properties/tracts/properties/bore/properties/elements",
+                            "type": "array",
+                            "title": "The elements schema",
+                            "description": "An explanation about the purpose of this instance.",
+                            "default": [],
+                            "examples": [
+                                [{
+                                        "type": "cylinder",
+                                        "length": 0.2,
+                                        "radius": 0.0075,
+                                        "loss multiplier": 1
+                                    },
+                                    {
+                                        "type": "termination",
+                                        "kind": "flanged"
+                                    }
+                                ]
+                            ],
+                            "additionalItems": true,
+                            "items": {
+                                "$id": "#/properties/tracts/properties/bore/properties/elements/items",
+                                "anyOf": [{
+                                        "$id": "#/properties/tracts/properties/bore/properties/elements/items/anyOf/0",
+                                        "type": "object",
+                                        "title": "The first anyOf schema",
+                                        "description": "An explanation about the purpose of this instance.",
+                                        "default": {},
+                                        "examples": [{
+                                            "type": "cylinder",
+                                            "length": 0.2,
+                                            "radius": 0.0075,
+                                            "loss multiplier": 1
+                                        }],
+                                        "required": [
+                                            "type",
+                                            "length",
+                                            "radius",
+                                            "loss multiplier"
+                                        ],
+                                        "properties": {
+                                            "type": {
+                                                "$id": "#/properties/tracts/properties/bore/properties/elements/items/anyOf/0/properties/type",
+                                                "type": "string",
+                                                "title": "The type schema",
+                                                "description": "An explanation about the purpose of this instance.",
+                                                "default": "",
+                                                "examples": [
+                                                    "cylinder"
+                                                ]
+                                            },
+                                            "length": {
+                                                "$id": "#/properties/tracts/properties/bore/properties/elements/items/anyOf/0/properties/length",
+                                                "type": "number",
+                                                "title": "The length schema",
+                                                "description": "An explanation about the purpose of this instance.",
+                                                "default": 0.0,
+                                                "examples": [
+                                                    0.2
+                                                ]
+                                            },
+                                            "radius": {
+                                                "$id": "#/properties/tracts/properties/bore/properties/elements/items/anyOf/0/properties/radius",
+                                                "type": "number",
+                                                "title": "The radius schema",
+                                                "description": "An explanation about the purpose of this instance.",
+                                                "default": 0.0,
+                                                "examples": [
+                                                    0.0075
+                                                ]
+                                            },
+                                            "loss multiplier": {
+                                                "$id": "#/properties/tracts/properties/bore/properties/elements/items/anyOf/0/properties/loss%20multiplier",
+                                                "type": "integer",
+                                                "title": "The loss multiplier schema",
+                                                "description": "An explanation about the purpose of this instance.",
+                                                "default": 0,
+                                                "examples": [
+                                                    1
+                                                ]
+                                            }
+                                        },
+                                        "additionalProperties": true
+                                    },
+                                    {
+                                        "$id": "#/properties/tracts/properties/bore/properties/elements/items/anyOf/1",
+                                        "type": "object",
+                                        "title": "The second anyOf schema",
+                                        "description": "An explanation about the purpose of this instance.",
+                                        "default": {},
+                                        "examples": [{
+                                            "type": "termination",
+                                            "kind": "flanged"
+                                        }],
+                                        "required": [
+                                            "type",
+                                            "kind"
+                                        ],
+                                        "properties": {
+                                            "type": {
+                                                "$id": "#/properties/tracts/properties/bore/properties/elements/items/anyOf/1/properties/type",
+                                                "type": "string",
+                                                "title": "The type schema",
+                                                "description": "An explanation about the purpose of this instance.",
+                                                "default": "",
+                                                "examples": [
+                                                    "termination"
+                                                ]
+                                            },
+                                            "kind": {
+                                                "$id": "#/properties/tracts/properties/bore/properties/elements/items/anyOf/1/properties/kind",
+                                                "type": "string",
+                                                "title": "The kind schema",
+                                                "description": "An explanation about the purpose of this instance.",
+                                                "default": "",
+                                                "examples": [
+                                                    "flanged"
+                                                ]
+                                            }
+                                        },
+                                        "additionalProperties": true
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    "additionalProperties": true
+                }
+            },
+            "additionalProperties": true
+        }
+    },
+    "additionalProperties": true
+}
