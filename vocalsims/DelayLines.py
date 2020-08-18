@@ -1,12 +1,12 @@
 import numpy as np
-from .delay_line_helper import delay_ticker
+from collections import deque
 
 class IntegerDelayLine(object):
     """
     Implements a delay line for use in real time
     
     Create as:
-        `dl = IntegerDelayLine(delay)`
+        `dl = IntegerDelayLineDq(delay)`
         delay: (int)
 
 
@@ -24,13 +24,13 @@ class IntegerDelayLine(object):
         Create new delay with an integer delay del 
         """
 
-        self.n = (delay)+1
+        self.n = (delay)
         self.delay = delay
         self.init_delay_line()
         self.counter = 0
     
     def init_delay_line(self):
-        self.buff = np.zeros(self.n*2)
+        self.buff = deque([0.0]*(self.n+1),maxlen=self.n+1) 
 
     def increment_counter(self):
         self.counter += 1
@@ -41,19 +41,17 @@ class IntegerDelayLine(object):
         """
 
         self.increment_counter()
-        return delay_ticker(self.buff,in_smpl,self.counter,self.n,self.delay)
+        self.buff.append(in_smpl)
+        return self.buff[0]
 
     def next_output(self):
         """
         return next filter output without introducing a new input sample
         """
-        idx = (self.counter + 1) % self.n
-        out = self.buff[idx+self.n-self.delay]
-        return out
+        return self.buff[0]
 
     def get_line(self):
-        idx = self.counter % self.n
-        return self.buff[idx+self.n:idx+self.n-self.delay:-1]
+        return self.buff
 
     def reset(self, in_val=0, out_val=0):
         """
