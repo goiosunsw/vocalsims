@@ -1,0 +1,145 @@
+{
+    "description": "",
+    "biblio": [{
+            "author": "Karlsson, I",
+            "title": "Voice quality, male / female variations and speaking style.",
+            "publication": "SPEECH   MAPS(ESPRIT/BR  No  6975)   WP1  Year  3  report",
+            "editor": " CH Shadle",
+            "other data": "26: 9-13.",
+            "year": 1995
+        },
+        {
+            "author": "Fant, G",
+            "title": "The LF-model revisited. Transformations and frequency-domain analysis",
+            "year": 1995
+        }
+
+    ],
+    "parameters": [{
+            "parameter": "F0",
+            "name": "fundamental frequency",
+            "description": "",
+            "unit": "Hz",
+            "relations": [
+                "1/T0"
+            ]
+        },
+        {
+            "parameter": "RG",
+            "name": "ratio to rise time",
+            "description": "",
+            "unit": "%",
+            "relations": [
+                "T0/2/TP"
+            ]
+        },
+        {
+            "parameter": "FG",
+            "name": "maximum frequency ",
+            "description": "frequency of spectral peak",
+            "unit": "Hz",
+            "relations": [
+                "rg*100"
+            ]
+        },
+        {
+            "parameter": "RE",
+            "name": "",
+            "description": "",
+            "unit": "%",
+            "relations": [
+                "Te/T0"
+            ]
+        },
+        {
+            "parameter": "OQ",
+            "name": "open quotient",
+            "description": "",
+            "unit": "%",
+            "relations": [
+                "(1+RK)/2/RG"
+            ]
+        },
+        {
+            "parameter": "Ta",
+            "name": "exponential time constant",
+            "description": "time constant of the exponential phase during closure",
+            "unit": "ms",
+            "relations": []
+        },
+        {
+            "parameter": "Tp",
+            "name": "rise time",
+            "description": "",
+            "unit": "ms",
+            "relations": []
+        },
+        {
+            "parameter": "RA",
+            "name": "relative exponential time",
+            "description": "ratio of the exponential time constant during closure to period",
+            "unit": "%",
+            "relations": [
+                "Ta/T0",
+                "(4.8*RD-1)/100",
+                "F0/(2*pi*Fa)"
+            ]
+        },
+        {
+            "parameter": "Fa",
+            "name": "high drop-off frequency",
+            "description": "frequency where the spectrum attains extra 6dB roll-off",
+            "unit": "Hz",
+            "relations": [
+                "1/(2*pi*Ta)"
+            ]
+        },
+        {
+            "parameter": "SP",
+            "name": "",
+            "description": "",
+            "unit": "%",
+            "relations": [
+                "(Tc/Tp - 1)"
+            ]
+        },
+        {
+            "parameter": "RK",
+            "name": "falling branch",
+            "description": "relative duration of the falling branch",
+            "unit": "%",
+            "relations": [
+                "Te/Tp - 1",
+                "(22.4+11.8*RD)/100"
+            ]
+        },
+        {
+            "parameter": "flpl",
+            "name": "",
+            "description": "",
+            "unit": "l/s",
+            "relations": [
+                "Te/Tp - 1"
+            ]
+        },
+        {
+            "parameter": "fllk",
+            "name": "",
+            "description": "",
+            "unit": "l/s",
+            "relations": [
+                "Te/Tp - 1"
+            ]
+        },
+        {
+            "parameter": "RD",
+            "name": "shape parameter",
+            "description": "one-parameter model",
+            "unit": "",
+            "relations": [
+                "(1/0.11)*(0.5+1.2*RK)*(RK/4//RG+RA)"
+            ],
+            "range": [0.2, 5.0]
+        }
+    ]
+}

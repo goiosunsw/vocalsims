@@ -1,0 +1,62 @@
+{
+    "main variable": "frequency",
+    "tables": {
+        "eyring_46": {
+            "filename": "Eyring_1946_jungle_attenuation.csv",
+            "biblio": {
+                "author": "Eyring, Carl F.",
+                "year": 1946,
+                "journal": "J. Acoust. Soc. Am.",
+                "article title": "Jungle Acoustics"
+            },
+            "values": {
+                "name": "excess attenuation per meter",
+                "units": "dB/m",
+                "SI multiplier": 1,
+                "integration": "log-bands"
+            },
+            "columns": [{
+                "name": "environment"
+            }],
+            "rows": [{
+                "title": "",
+                "name": "frequency",
+                "unit": "Hz"
+            }]
+        },
+        "waser_brown_86": {
+            "filename": "WaserBrown1986_ExcessAttenuation_digitised.csv",
+            "name": "waser_brown_86",
+            "biblio": {
+                "author": "Peter M. Waser, Charles H. Brown",
+                "year": 1986,
+                "journal": "Am. J. Primatology",
+                "article title": "Habitat acoustics and primate communication"
+            },
+            "values": {
+                "title": "Excess Attenuation (dB)",
+                "name": "excess attenuation",
+                "units": "dB",
+                "SI multiplier": 1,
+                "integration": "narrow-bands"
+            },
+            "columns": [],
+            "rows": [{
+                    "title": "Habitat",
+                    "name": "environment"
+                },
+                {
+                    "title": "distance (m)",
+                    "name": "distance",
+                    "unit": "m",
+                    "SI multiplier": 1
+                },
+                {
+                    "title": "Frequency (Hz)",
+                    "name": "frequency",
+                    "unit": "Hz"
+                }
+            ]
+        }
+    }
+}
