@@ -9,7 +9,7 @@ import scipy.signal as sig
 def db(x):
     return 20*np.log10(x)
 
-def do_analysis(data, t_init=[0.01,0.05], t_fin=0.1, tsust=0.1):
+def do_analysis(data, t_init=[0.01,0.05], t_fin=0.1, tsust=0.1, impedance=True):
     # extract main parameters
     res = {}
     sr = data['js']['simulation']['sample rate']
@@ -129,17 +129,17 @@ def do_analysis(data, t_init=[0.01,0.05], t_fin=0.1, tsust=0.1):
             res['{}_abs_pert'.format(rts.label)]=np.nan    
     
     # impedance peaks
-    
-    for lab, iresp in (('zv', data['impresp_vt']), ('zb', data['impresp_b'])):
-        rb = np.fft.fft(iresp)
-        rb=rb[:len(rb)//2]
-        zb = (1+rb)/(1-rb)
-        zs = ts.SampledTimeSeries(np.abs(zb),dt=data['js']['simulation']['sample rate']/len(zb))
-        lzs = zs.apply(db)
-        pk = lzs.peaks(twind=50)[0]
-        for ii in range(5):
-            res[lab+'_'+str(ii)+'_f'] = pk[ii]
-            res[lab+'_'+str(ii)+'_z'] = lzs[pk[ii]]
+    if impedance:
+        for lab, iresp in (('zv', data['impresp_vt']), ('zb', data['impresp_b'])):
+            rb = np.fft.fft(iresp)
+            rb=rb[:len(rb)//2]
+            zb = (1+rb)/(1-rb)
+            zs = ts.SampledTimeSeries(np.abs(zb),dt=data['js']['simulation']['sample rate']/len(zb))
+            lzs = zs.apply(db)
+            pk = lzs.peaks(twind=50)[0]
+            for ii in range(5):
+                res[lab+'_'+str(ii)+'_f'] = pk[ii]
+                res[lab+'_'+str(ii)+'_z'] = lzs[pk[ii]]
 
 
     return res

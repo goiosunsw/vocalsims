@@ -17,6 +17,5 @@ distutils.core.setup(
     license='GPL v3',
     packages=['vocalsims', 'vocalsims.interfacing','vocalsims.fitting'],
     test_suite = 'setup.my_tests',
-    ext_modules = Cython.Build.cythonize(["vocalsims/*.pyx"]),
-                  
+    ext_modules = Cython.Build.cythonize("vocalsims/real_time_filter.pyx"), 
     include_dirs=[numpy.get_include()])
