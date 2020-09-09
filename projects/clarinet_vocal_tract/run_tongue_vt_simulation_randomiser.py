@@ -5,12 +5,13 @@ import collections
 import six
 import traceback
 import json
+import pickle
 from datetime import datetime
 
 from copy import deepcopy
-from reed_up_downstream_dyn import ReedSimulation
+from vocalsims.reed_up_downstream_dyn import ReedSimulation
 from simulation_harmonic_transient_analyser import do_analysis
-from json_object import JSONObject
+from vocalsims.interfacing.json_object import JSONObject
 from scipy.optimize import fsolve
 import numpy as np
 import scipy.signal as sig
@@ -18,6 +19,10 @@ import pickle
 import multiprocessing
 
 nfft_ir = 2**14
+
+base_out_name = 'tongue_vt_open_tuning'
+output_data=False
+sidx=0
 
 def json_path_get(js, addr):
     ret = js
@@ -225,11 +230,7 @@ def js_generator(js0):
 
 from time import sleep
 
-def simulate_js(js):
-    impresp,impresp_vt = imp_resp(js,nfft=nfft_ir)
-
-    sim = run_smooth_pert(js)
-    
+def collect_time_domain(sim):
     p_b = sim.p_in + sim.p_out;
     p_vt = sim.p_vt_in + sim.p_vt_out;
 
@@ -237,15 +238,13 @@ def simulate_js(js):
     u_sg = -(sim.p_vt_out - sim.p_vt_in)/sim.zc_vt
 
     a = sim.a
-    f0=1/(sim.tracts['bore'].total_delay/sim.sr*2)
-    #hhb = HeterodyneHarmonic(p_b,sr=sim.sr,nwind=1024,nhop=256,f=f0)
-    #hhv = HeterodyneHarmonic(p_vt,sr=sim.sr,nwind=1024,nhop=256,f=f0)
+
     zch_b = sim.char_impedances['bore']
     zch_vt = sim.char_impedances['vocal']
 
     this_dict = {'p_b':p_b,'p_vt':p_vt,#'hhb':hhb,'hhv':hhv,
                 'pert_time':sim.pert_time,'p_blow':sim.p_blow_vec,
-                'impresp_b':impresp, 'impresp_vt':impresp_vt, 'zch_b':zch_b, 'zch_vt':zch_vt,'js':js,
+                'zch_b':zch_b, 'zch_vt':zch_vt,
                     'u':u, 'a':a}
 
     for probe in sim.probes:
@@ -253,14 +252,33 @@ def simulate_js(js):
         this_dict['p_{}'.format(lab)] = np.array(probe['in']) + np.array(probe['out'])
 
     return this_dict
+        
+def simulate_js(js):
+    impresp, impresp_vt = imp_resp(js,nfft=nfft_ir)
+    
+    jsfile = base_out_name+'_'+js['startstamp']+'_init.json'
+    with open(jsfile,'w') as f:
+        json.dump(js.to_python(),f)
+
+    sim = run_smooth_pert(js)
+    
+    this_dict = collect_time_domain(sim)
+    
+    this_dict.update({'impresp_b':impresp, 'impresp_vt':impresp_vt, 'js':js})
+
+    return this_dict
 
 def work_on_js(js):
     res = {'simulation':
             {'start':datetime.strftime(datetime.now(),'%Y%m%d_%H%M%S'),
-             'params':js.to_python()}
+             'params':js.to_python()},
+           'startstamp':js['startstamp']
           }
     try:
         data = simulate_js(js)
+        if output_data:
+            with open(base_out_name+'_'+js['startstamp']+'.pickle','wb') as f:
+                pickle.dump(data, f)
         res['simulation']['end'] = datetime.strftime(datetime.now(),'%Y%m%d_%H%M%S')
     except Exception as e:
         err = traceback.format_exc()
@@ -286,16 +304,16 @@ def md_worker(q,iolock):
         if js is None:
             break
 
-        tongue_rad = js['tracts/vocal/elements/0/radius']
-        main_len = js['tracts/vocal/elements/{}/length'.format(n_main)] 
-        pblow = js['perturbation/blowing pressure'] 
+        startstamp = datetime.strftime(datetime.now(),'%Y%m%d_%H%M%S')
+        js['startstamp'] = "{:9d}".format(sidx)
+        sidx+=1
 
         with iolock:
-            print("Processing")    
-            print("tongue radius {}, vt length = {}, pblow = {}".format(tongue_rad,main_len,pblow))
+            print("Processing "+js['startstamp'])    
         res = work_on_js(js)
         
-        outfile = base_out_name + '_{}.json'.format(datetime.strftime(datetime.now(),'%Y%m%d_%H%M%S'))
+        # outfile = base_out_name + '_{}.json'.format(datetime.strftime(datetime.now(),'%Y%m%d_%H%M%S'))
+        outfile = base_out_name+'_'+res['startstamp']+'.json'
 
         with open(outfile,'w') as f:
             json.dump(res,f)
@@ -340,11 +358,11 @@ if  __name__ == '__main__':
 
     if run_one:
         js1 = jsg.__next__()
+        js1['startstamp']=str(sidx)
+        output_data = True
         res = work_on_js(js1)
         print(res)
     else:
-        base_out_name = 'tongue_vt_open_tuning'
-
             
 
         mpq = multiprocessing.Queue(maxsize=4)
