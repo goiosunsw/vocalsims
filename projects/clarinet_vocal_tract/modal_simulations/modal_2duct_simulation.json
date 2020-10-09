@@ -1,0 +1,49 @@
+{
+    "description": "Reed simulation with modal tracts and reed dynamics and non-linear reed force",
+    "version": "20201006",
+    "tmax": 0.3,
+    "gamma": {
+        "sustain_val": 0.5,
+        "time_const": 0.05,
+        "exp_limit_multiplier": 1.1
+    },
+    "zeta": 0.5,
+    "reed": {
+        "frequency": {
+            "_value": 1500,
+            "_range": [500, 4000]
+        },
+        "q": {
+            "_value": 0.7,
+            "_range": [0.5, 5.0]
+        },
+        "amplitude": { "_link": "reed/q" }
+    },
+    "bore": {
+        "frequencies": [{
+            "_value": 220,
+            "_range": [150, 800]
+        }],
+        "qs": [{
+            "_value": 25,
+            "_range": [10, 35]
+        }],
+        "amplitudes": [{ "_link": "bore/qs/0" }]
+    },
+    "vocal": {
+        "frequencies": [500],
+        "qs": [15],
+        "amplitudes": [15]
+    },
+    "nlfunc": {
+        "type": "parabolic",
+        "nl_start": 0.75,
+        "nl_ev": 1.1
+    },
+    "perturbation": {
+        "multiplier": 1.1,
+        "duration": 1.0
+    }
+
+
+}
