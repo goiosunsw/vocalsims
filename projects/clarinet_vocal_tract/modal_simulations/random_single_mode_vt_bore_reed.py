@@ -35,6 +35,9 @@ MONGO_DB = "modal-2duct-simulations"
 MONGO_COLLECTION = "random-runs-1"
 local_port = 27017
 
+collection = None
+server = None
+
 def gamma_t(t,tau=.05,gamma_lim=.5,gamma_pert=0.45,gamma_fact=1.01):
     g = (1-np.exp(-t/tau))*gamma_lim
     if g>gamma_pert:
@@ -377,28 +380,26 @@ def md_worker(q,iolock):
         #    json.dump(res,f)
 
 def write_to_mongo(js):
+    if not (server.is_active):
+        print("reconnecting SSH tunnel... " + datetime.ctime(datetime.now()))
+        server.stop()
+        server = get_server()
+        server.start()
+        
+    with pymongo.MongoClient('localhost', local_port) as connection:
+        db = connection[MONGO_DB]
+        collection = db[MONGO_COLLECTION]
 
-    # define ssh tunnel
-    with SSHTunnelForwarder(
+        collection.insert_one(js)
+
+def get_server():
+    return SSHTunnelForwarder(
         MONGO_HOST,
         ssh_username=MONGO_USER,
         ssh_pkey=SSH_KEY,
         remote_bind_address=('localhost', 27017),
-        local_bind_address=('localhost',local_port)
-    ) as server:
-        connection = pymongo.MongoClient('localhost', local_port)
-        db = connection[MONGO_DB]
-        collection = db[MONGO_COLLECTION]
-        
-        #collection.drop()
-
-        collection.insert_one(js)
-        #print (db)
-        #print(json.dumps(db.list_collection_names(), indent=2))    
-
-        # close ssh tunnel
-        connection.close()
-        server.stop() 
+        local_bind_address=('localhost', local_port)
+    )
 
 if  __name__ == '__main__': 
     #jsfile = 'tongue_2seg_vt_open_simulation_with_tuning.json'
@@ -426,21 +427,24 @@ if  __name__ == '__main__':
 
     jsg = js_generator(js)
 
-    if run_one:
-        js1 = jsg.__next__()
-        res = work_on_js(js1)
-        print(res)
-    else:
-        base_out_name = 'tongue_vt_open_tuning'
+    # define ssh tunnel
+    with get_server() as server:
 
-            
+        if run_one:
+            js1 = jsg.__next__()
+            res = work_on_js(js1)
+            print(res)
+        else:
+            base_out_name = 'tongue_vt_open_tuning'
 
-        mpq = multiprocessing.Queue(maxsize=4)
-        iolock = multiprocessing.Lock()
-        p = multiprocessing.Pool(8, initializer=md_worker, initargs=(mpq,iolock))
-
-        for js in jsg:
-            mpq.put(js)
-            with iolock:
-                print("Queued")
                 
+
+            mpq = multiprocessing.Queue(maxsize=4)
+            iolock = multiprocessing.Lock()
+            p = multiprocessing.Pool(8, initializer=md_worker, initargs=(mpq,iolock))
+
+            for js in jsg:
+                mpq.put(js)
+                with iolock:
+                    print("Queued")
+                    
