@@ -32,7 +32,7 @@ SSH_KEY=paramiko.RSAKey.from_private_key_file(pkey)
 MONGO_HOST = "129.94.162.112"
 MONGO_USER = "goios"
 MONGO_DB = "modal-2duct-simulations"
-MONGO_COLLECTION = "random-runs-1"
+MONGO_COLLECTION = "random-runs-var-gamma-pert-time"
 local_port = 27017
 
 collection = None
@@ -380,11 +380,6 @@ def md_worker(q,iolock):
         #    json.dump(res,f)
 
 def write_to_mongo(js):
-    if not (server.is_active):
-        print("reconnecting SSH tunnel... " + datetime.ctime(datetime.now()))
-        server.stop()
-        server = get_server()
-        server.start()
         
     with pymongo.MongoClient('localhost', local_port) as connection:
         db = connection[MONGO_DB]
@@ -428,23 +423,29 @@ if  __name__ == '__main__':
     jsg = js_generator(js)
 
     # define ssh tunnel
-    with get_server() as server:
+    server = get_server()
 
-        if run_one:
-            js1 = jsg.__next__()
-            res = work_on_js(js1)
-            print(res)
-        else:
-            base_out_name = 'tongue_vt_open_tuning'
+    if run_one:
+        js1 = jsg.__next__()
+        res = work_on_js(js1)
+        print(res)
+    else:
+        base_out_name = 'tongue_vt_open_tuning'
 
+            
+
+        mpq = multiprocessing.Queue(maxsize=4)
+        iolock = multiprocessing.Lock()
+        p = multiprocessing.Pool(8, initializer=md_worker, initargs=(mpq,iolock))
+
+        for js in jsg:
+            # check here whether the SSH server is still active
+            if not (server.is_active):
+                print("reconnecting SSH tunnel... " + datetime.ctime(datetime.now()))
+                server.stop()
+                server = get_server()
+                server.start()
+            mpq.put(js)
+            with iolock:
+                print("Queued")
                 
-
-            mpq = multiprocessing.Queue(maxsize=4)
-            iolock = multiprocessing.Lock()
-            p = multiprocessing.Pool(8, initializer=md_worker, initargs=(mpq,iolock))
-
-            for js in jsg:
-                mpq.put(js)
-                with iolock:
-                    print("Queued")
-                    
