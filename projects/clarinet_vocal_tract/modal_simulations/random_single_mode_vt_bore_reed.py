@@ -32,8 +32,8 @@ SSH_KEY=paramiko.RSAKey.from_private_key_file(pkey)
 MONGO_HOST = "129.94.162.112"
 MONGO_USER = "goios"
 MONGO_DB = "modal-2duct-simulations"
-MONGO_COLLECTION = "random-runs-var-gamma-pert-time"
-local_port = 27017
+MONGO_COLLECTION = "random-runs-var-gamma"
+local_port = 25017
 
 collection = None
 server = None
@@ -383,7 +383,10 @@ def write_to_mongo(js):
         
     with pymongo.MongoClient('localhost', local_port) as connection:
         db = connection[MONGO_DB]
-        collection = db[MONGO_COLLECTION]
+        # mongo_collection = js['simulation']['params']['db']
+        # print(mongo_collection)
+        mongo_collection = MONGO_COLLECTION
+        collection = db[mongo_collection]
 
         collection.insert_one(js)
 
@@ -412,10 +415,9 @@ if  __name__ == '__main__':
     with open(jsfile) as f:
         js = JSONObject(f)
 
+    # MONGO_COLLECTION = js['db']
     n_main = 1
 
-    pblow_mult_list = [.9,1.0,1.05,1.1,1.2]
-    pblow_traget_mul = 1.1
 
     len_range = 0.03
     nfft_ir = 2**14
