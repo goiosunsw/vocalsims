@@ -385,21 +385,23 @@ def write_to_mongo(js):
         
     with pymongo.MongoClient('localhost', local_port) as connection:
         db = connection[MONGO_DB]
-        # mongo_collection = js['simulation']['params']['db']
-        # print(mongo_collection)
-        mongo_collection = MONGO_COLLECTION
+        mongo_collection = js['simulation']['params']['db']
+        print(mongo_collection)
+        #mongo_collection = MONGO_COLLECTION
         collection = db[mongo_collection]
 
         collection.insert_one(js)
 
 def get_server():
-    return SSHTunnelForwarder(
+    server =  SSHTunnelForwarder(
         MONGO_HOST,
         ssh_username=MONGO_USER,
         ssh_pkey=SSH_KEY,
         remote_bind_address=('localhost', 27017),
         local_bind_address=('localhost', local_port)
     )
+    server.start()
+    return server
 
 if  __name__ == '__main__': 
     #jsfile = 'tongue_2seg_vt_open_simulation_with_tuning.json'
@@ -452,4 +454,6 @@ if  __name__ == '__main__':
             mpq.put(js)
             with iolock:
                 print("Queued")
+
+    server.stop()
                 
