@@ -59,6 +59,7 @@ def nl_from_js(js):
         if js['type'] == 'parabolic':
             x_st = js['nl_start']
             x_ev = js['nl_ev']
+            return ivp.nlstiff_parabolic(x_st=x_st,x_ev=x_ev)
             
 
 def ivp_simulate(js):
@@ -87,6 +88,7 @@ def ivp_simulate(js):
     avt = np.array(jsv['amplitudes'].to_python())
 
     nlfunc = nl_from_js(js['nlfunc'])
+    print(nlfunc)
     tmax = js['tmax']
     
     jsp = js['perturbation']
