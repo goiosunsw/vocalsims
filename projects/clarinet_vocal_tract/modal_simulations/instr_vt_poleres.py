@@ -459,9 +459,14 @@ class croak_poleres(object):
         #    p += 2.*real(pc[n])
             
         # solve the eqations for each acoustic mode
-        f = empty(self.nmodes+1,dtype='complex')
+        f = empty(self.nmodes+self.nvtmodes+1,dtype='complex')
         for n,mode in enumerate(self.acmode):
             f[n+1]=mode.calc_dp(u,pc[n])
+
+        n0=n+2
+        for n, mode in enumerate(self.vtmode):
+            pvc = w[n+n0]
+            f[n+n0] = mode.calc_dp(-u,pvc)
         
         # add the reed equation
         f[0] = 0.0
@@ -567,9 +572,9 @@ class croak_poleres(object):
         # change here for external force    
         force = 0.0
         
-        if self.reed_f_type is 'square':
+        if self.reed_f_type == 'square':
             force = floor(mod(t*100,2))*2-1.0
-        elif self.reed_f_type is 'rect':
+        elif self.reed_f_type == 'rect':
             if t< 0.01:
                 force = 1
 
@@ -730,7 +735,7 @@ class croak_poleres(object):
             * fsig Forcing signal (default: impulse);
         """
         
-        w0=zeros(self.nmodes+1)
+        w0=zeros(self.nmodes+self.nvtmodes+1)
         
         odesol = ode(f=self.vf_acoustic_res)
         odesol.set_integrator('zvode',nsteps=500)
@@ -740,6 +745,7 @@ class croak_poleres(object):
         wsola=[]
         uf = []
         p = []
+        pv = []
         
         # Call the ODE solver.
         #wsol = odeint(croak.vectorfield, w0, t, args=(par,),
@@ -761,6 +767,12 @@ class croak_poleres(object):
             
 
         self.ufunc=frompyfunc(pointwise,1,1)
+        odesol.integrate(odesol.t)
+        tsol.append(odesol.t)
+        wsola.append(2*real(odesol.y))
+        uf.append(self.u)
+        p.append(sum(2*real(odesol.y[1:self.nmodes+1])))
+        pv.append(sum(2*real(odesol.y[self.nmodes+1:1+self.nmodes+self.nvtmodes])))
         while odesol.t <= self.tmax:
             
             if odesol.successful():
@@ -768,26 +780,28 @@ class croak_poleres(object):
                 tsol.append(odesol.t)
                 wsola.append(2*real(odesol.y))
                 uf.append(self.u)
-                p.append(sum(2*real(odesol.y[1:])))
+                p.append(sum(2*real(odesol.y[1:self.nmodes+1])))
+                pv.append(sum(2*real(odesol.y[self.nmodes+1:1+self.nmodes+self.nvtmodes])))
             else:
                 sys.stderr.write('!!!!! Integration STOPPED prematurely!\n')
-                sys.stdout.write('!!!!! Integration STOPPED prematurely!\n')
+
+                sys.stderr.write('Return code: %d'%odesol.get_return_code())
                 break
                 
         t = tsol
         u = vstack(uf)
         y = (vstack(wsola))
         
-        return u.squeeze(), vstack(p).squeeze()
+        return u.squeeze(), vstack(p).squeeze(),vstack(pv).squeeze() 
 
-    def ac_noise_response(self):
+    def ac_noise_response(self,tmax=0.5):
         """
         Return th reed response to a signal 
         Arguments
             * fsig Forcing signal (default: impulse);
         """
         
-        w0=zeros(self.nmodes+1)
+        w0=zeros(self.nmodes+self.nvtmodes+1)
         
         odesol = ode(f=self.vf_acoustic_res)
         odesol.set_integrator('zvode',nsteps=500)
@@ -797,6 +811,7 @@ class croak_poleres(object):
         wsola=[]
         uf = []
         p = []
+        pv = []
         
         # Call the ODE solver.
         #wsol = odeint(croak.vectorfield, w0, t, args=(par,),
@@ -804,14 +819,16 @@ class croak_poleres(object):
         
         #odesol.set_f_params(0)
         #self.u=1.0
-        while odesol.t <= self.tmax:
-            self.u = np.random.rand()-0.5
+        self.ufunc = lambda x:rand()-.5
+        while odesol.t <= tmax:
+            self.u = rand()-0.5
             if odesol.successful():
                 odesol.integrate(odesol.t + self.dt)
                 tsol.append(odesol.t)
                 wsola.append(2*real(odesol.y))
                 uf.append(self.u)
-                p.append(sum(2*real(odesol.y[1:])))
+                p.append(sum(2*real(odesol.y[1:self.nmodes+1])))
+                pv.append(sum(2*real(odesol.y[self.nmodes+1:1+self.nmodes+self.nvtmodes])))
             else:
                 sys.stderr.write('!!!!! Integration STOPPED prematurely!\n')
                 sys.stdout.write('!!!!! Integration STOPPED prematurely!\n')
@@ -822,7 +839,7 @@ class croak_poleres(object):
         u = vstack(uf)
         y = (vstack(wsola))
         
-        return u.squeeze(), vstack(p).squeeze()
+        return u.squeeze(), vstack(p).squeeze(), vstack(pv).squeeze()
 
 
     
