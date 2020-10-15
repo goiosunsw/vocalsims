@@ -40,7 +40,7 @@ def do_analysis(data, t_init=[0.01,0.05], t_fin=0.1, tsust=0.1,impedance=True):
 
     # harmonic analysis
     try:
-        nwind = min(int(sr/f0*3),1024)
+        nwind = (int(sr/f0*3))
     except ValueError:
         nwind = 1024
 
