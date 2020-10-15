@@ -2,6 +2,7 @@
     "description": "Reed simulation with modal tracts and reed dynamics and non-linear reed force",
     "version": "20201006",
     "tmax": 0.3,
+    "db": "modal-tests",
     "gamma": {
         "sustain_val": 0.5,
         "time_const": 0.05,
