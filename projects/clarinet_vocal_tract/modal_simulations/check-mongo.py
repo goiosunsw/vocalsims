@@ -30,7 +30,7 @@ with SSHTunnelForwarder(
     with pymongo.MongoClient('localhost', local_port) as connection:
         db = connection[MONGO_DB]
         collection = db[MONGO_COLLECTION]
-        print (db)
+        print (json.dumps(db.command('dbstats'),indent=2))
         print("List of DBs on mongo:")
         print(json.dumps(connection.list_database_names(),indent=2))
         print("List of collections in db %s:"%(MONGO_DB))

@@ -784,7 +784,6 @@ class croak_poleres(object):
                 pv.append(sum(2*real(odesol.y[self.nmodes+1:1+self.nmodes+self.nvtmodes])))
             else:
                 sys.stderr.write('!!!!! Integration STOPPED prematurely!\n')
-
                 sys.stderr.write('Return code: %d'%odesol.get_return_code())
                 break
                 
@@ -819,7 +818,6 @@ class croak_poleres(object):
         
         #odesol.set_f_params(0)
         #self.u=1.0
-        self.ufunc = lambda x:rand()-.5
         while odesol.t <= tmax:
             self.u = rand()-0.5
             if odesol.successful():
@@ -831,7 +829,7 @@ class croak_poleres(object):
                 pv.append(sum(2*real(odesol.y[self.nmodes+1:1+self.nmodes+self.nvtmodes])))
             else:
                 sys.stderr.write('!!!!! Integration STOPPED prematurely!\n')
-                sys.stdout.write('!!!!! Integration STOPPED prematurely!\n')
+                sys.stderr.write('Return code: %d'%odesol.get_return_code())
                 break
             #self.u=0.0
         
