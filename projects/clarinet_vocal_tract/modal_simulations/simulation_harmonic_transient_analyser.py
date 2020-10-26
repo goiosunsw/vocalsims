@@ -190,7 +190,7 @@ def do_analysis(data, t_init=[0.01,0.05], t_fin=0.1, tsust=0.1,impedance=True):
     for ii, hts in enumerate(hts_array):
         vts = vts_array[ii]
         rts = vts.apply(db)-hts.apply(db)
-        rts.label = 'hrat{}'.format(ii+1)
+        rts.label = 'hrat{}'.format(hts.label[1:])
         res['{}_abs_sus'.format(rts.label)]=rts.percentile(50,from_time=fts.t[-1]-tsust)
         res['{}_abs_sus_var'.format(rts.label)]=np.diff(rts.percentile([75,25],from_time=fts.t[-1]-tsust))[0]
         res['{}_abs_trans'.format(rts.label)]=rts.percentile(50,from_time=t_trans_start, to_time=t_trans_end)
