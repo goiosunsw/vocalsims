@@ -32,7 +32,7 @@ SSH_KEY=paramiko.RSAKey.from_private_key_file(pkey)
 MONGO_HOST = "129.94.162.112"
 MONGO_USER = "goios"
 MONGO_DB = "modal-2duct-simulations"
-MONGO_COLLECTION = "random-runs-var-gamma"
+MONGO_COLLECTION = "modal-with-rates"
 local_port = 25017
 
 collection = None
