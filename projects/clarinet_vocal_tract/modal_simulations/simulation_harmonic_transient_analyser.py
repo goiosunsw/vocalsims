@@ -96,6 +96,7 @@ def do_analysis(data, t_init=[0.01,0.05], t_fin=0.1, tsust=0.1,impedance=True):
 
 
     ha = {}
+    fa = {}
     for lab in ('b', 'vt', 'm'):
         try:
             p = data['p_{}'.format(lab)]
@@ -104,14 +105,19 @@ def do_analysis(data, t_init=[0.01,0.05], t_fin=0.1, tsust=0.1,impedance=True):
         
         h_array_cplx, resid, partials = heterodyne_corr(p,sr,ff,maxwind=nw,nhop=128,nper=nper)
         h_array = []
+        f_array = []
         for h in h_array_cplx:
             habs = h.apply(np.abs)
             habs.f = h.f
             h_array.append(habs)
+            #partial frequencies 
+            fc=(h.apply(np.angle).apply(np.unwrap).diff()/2/np.pi).apply(lambda x: h.f-x)
+            f_array.append(fc)
 
         ha[lab] = h_array
+        fa[lab] = f_array
         n_non = 1
-        for ii, hts in enumerate(h_array):
+        for ii, (hts,pts) in enumerate(zip(h_array,f_array)):
             f = hts.f
             frat = f/f0
             hno = np.round(frat)
@@ -125,6 +131,7 @@ def do_analysis(data, t_init=[0.01,0.05], t_fin=0.1, tsust=0.1,impedance=True):
                 n_non += 1
 
             hts.label = label
+            pts.label = label
 
             res['{}_t_min'.format(label)]=hts.min_time()
             res['{}_t_max'.format(label)]=hts.max_time()
@@ -170,9 +177,9 @@ def do_analysis(data, t_init=[0.01,0.05], t_fin=0.1, tsust=0.1,impedance=True):
     for h_array in (hts_array,vts_array):
         for ii, hts in enumerate(h_array):
             res['{}_abs_sus'.format(hts.label)]=hts.percentile(50,from_time=fts.t[-1]-tsust)
-            res['{}_abs_sus_var'.format(hts.label)]=np.diff(hts.percentile([75,25],from_time=fts.t[-1]-tsust))[0]
+            res['{}_abs_sus_var'.format(hts.label)]=np.diff(hts.percentile([25,75],from_time=fts.t[-1]-tsust))[0]
             res['{}_abs_trans'.format(hts.label)]=hts.percentile(50,from_time=t_trans_start, to_time=t_trans_end)
-            res['{}_abs_trans_var'.format(hts.label)]=np.diff(hts.percentile([75,25],from_time=t_trans_start, to_time=t_trans_end))[0]
+            res['{}_abs_trans_var'.format(hts.label)]=np.diff(hts.percentile([25,75],from_time=t_trans_start, to_time=t_trans_end))[0]
 
         # growth rate via derivative
         dts = hts.apply(db).diff()
@@ -186,15 +193,23 @@ def do_analysis(data, t_init=[0.01,0.05], t_fin=0.1, tsust=0.1,impedance=True):
         else:
             res['{}_abs_pert'.format(hts.label)]=np.nan    
 
+    # harmonic descriptor extraction
+    for lab, f_array in fa.items():
+        for ii, pts in enumerate(f_array):
+            res['f{}_abs_sus'.format(pts.label)]=pts.percentile(50,from_time=fts.t[-1]-tsust)
+            res['f{}_abs_sus_var'.format(pts.label)]=np.diff(pts.percentile([25,75],from_time=fts.t[-1]-tsust))[0]
+            res['f{}_abs_trans'.format(pts.label)]=pts.percentile(50,from_time=t_trans_start, to_time=t_trans_end)
+            res['f{}_abs_trans_var'.format(pts.label)]=np.diff(pts.percentile([25,75],from_time=t_trans_start, to_time=t_trans_end))[0]
+
     # harmonic ratio descriptors
     for ii, hts in enumerate(hts_array):
         vts = vts_array[ii]
         rts = vts.apply(db)-hts.apply(db)
         rts.label = 'hrat{}'.format(hts.label[1:])
         res['{}_abs_sus'.format(rts.label)]=rts.percentile(50,from_time=fts.t[-1]-tsust)
-        res['{}_abs_sus_var'.format(rts.label)]=np.diff(rts.percentile([75,25],from_time=fts.t[-1]-tsust))[0]
+        res['{}_abs_sus_var'.format(rts.label)]=np.diff(rts.percentile([25,75],from_time=fts.t[-1]-tsust))[0]
         res['{}_abs_trans'.format(rts.label)]=rts.percentile(50,from_time=t_trans_start, to_time=t_trans_end)
-        res['{}_abs_trans_var'.format(rts.label)]=np.diff(rts.percentile([75,25],from_time=t_trans_start, to_time=t_trans_end))[0]
+        res['{}_abs_trans_var'.format(rts.label)]=np.diff(rts.percentile([25,75],from_time=t_trans_start, to_time=t_trans_end))[0]
         res['{}_abs_fin'.format(rts.label)]=rts.v[-1]
         if data['pert_time']>1e-4:
             res['{}_abs_pert'.format(rts.label)]=rts[data['pert_time']]

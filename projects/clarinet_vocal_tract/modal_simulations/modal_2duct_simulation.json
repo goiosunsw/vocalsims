@@ -1,7 +1,7 @@
 {
     "description": "Reed simulation with modal tracts and reed dynamics and non-linear reed force var gamma",
     "version": "20201026",
-    "db": "modal-vt-bore-jumps",
+    "db": "modal-vt-bore-jumps-2",
     "tmax": 0.5,
     "gamma": {
         "sustain_val": {
@@ -51,4 +51,4 @@
             "_range": [0.2, 2.5]
         }
     }
-} 
+}
