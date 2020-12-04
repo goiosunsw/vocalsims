@@ -18,6 +18,8 @@ All credit goes to Bjorn Gustavsen for his MATLAB implementation, and the follow
      Letters, vol. 18, no. 6, pp. 383-385, June 2008.
 """
 __author__ = 'Phil Reinhold'
+import numpy as np
+from numpy import *
 from numpy.linalg import eigvals, lstsq
 
 def cc(z):

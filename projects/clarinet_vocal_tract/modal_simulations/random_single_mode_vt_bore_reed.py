@@ -62,7 +62,7 @@ def nl_from_js(js):
             return ivp.nlstiff_parabolic(x_st=x_st,x_ev=x_ev)
             
 
-def ivp_simulate(js):
+def ivp_simulate(js, return_obj=False):
 
     
     jsg = js['gamma']
@@ -134,9 +134,14 @@ def ivp_simulate(js):
     
     data = {'p_b':cs.y[:,1],'p_vt':cs.y[:,2],#'hhb':hhb,'hhv':hhv,
                 'pert_time':cs.pert_time,'p_blow':cs.gamma_vec,
+                'zeta':cs.zeta_vec,
                 'js':js.to_python(),
                 'a':cs.y[:,0]}
-    return data
+    
+    if return_obj:
+        return data, cs
+    else:
+        return data
 
 def ivp_plot(cs,ax=None,label=None):
     t = cs.t

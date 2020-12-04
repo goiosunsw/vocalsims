@@ -78,7 +78,9 @@ def modal_to_poleres_acoust(w, q, a=1):
     inv2q = 1. / (2.*q)
     inv2q2 = inv2q*inv2q
     s = w * (-inv2q + 1j * sqrt(1. + 0j - inv2q2))
-    c = a * w  / q / 2. * (1. - 1j/(2.*q * sqrt(1. + 0j - inv2q2)))
+    ssc = s - s.conj()
+    c = a * w / q * s / ssc
+    #c = a * w  / q / 2. * (1. - 1j/(2.*q * sqrt(1. + 0j - inv2q2)))
     return s,c
 
 class nlstiff(object):

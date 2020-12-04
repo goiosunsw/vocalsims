@@ -81,7 +81,10 @@ def do_analysis(data, t_init=[0.01,0.05], t_fin=0.1, tsust=0.1,impedance=True):
     pks,_ = sig.find_peaks(10*np.log10(w),prominence=pk_prominence)
     ff = fw[pks]
     ff = ff[(ff<2000)&(ff>100)]
-    nw = int(sr/np.min(ff)*6)
+    try:
+        nw = int(sr/np.min(ff)*6)
+    except ValueError:
+        nw = 4096
     ff = np.insert(ff,0,0)
 
     # identify the frequency of interest
@@ -97,6 +100,7 @@ def do_analysis(data, t_init=[0.01,0.05], t_fin=0.1, tsust=0.1,impedance=True):
 
     ha = {}
     fa = {}
+    harg = {}
     for lab in ('b', 'vt', 'm'):
         try:
             p = data['p_{}'.format(lab)]
@@ -106,9 +110,12 @@ def do_analysis(data, t_init=[0.01,0.05], t_fin=0.1, tsust=0.1,impedance=True):
         h_array_cplx, resid, partials = heterodyne_corr(p,sr,ff,maxwind=nw,nhop=128,nper=nper)
         h_array = []
         f_array = []
+        harg_array = []
         for h in h_array_cplx:
             habs = h.apply(np.abs)
+            hargg = h.apply(lambda x: np.flipud(np.unwrap(np.angle(np.flipud(x)))))
             habs.f = h.f
+            harg_array.append(hargg)
             h_array.append(habs)
             #partial frequencies 
             fc=(h.apply(np.angle).apply(np.unwrap).diff()/2/np.pi).apply(lambda x: h.f-x)
@@ -116,6 +123,7 @@ def do_analysis(data, t_init=[0.01,0.05], t_fin=0.1, tsust=0.1,impedance=True):
 
         ha[lab] = h_array
         fa[lab] = f_array
+        harg[lab] = harg_array
         n_non = 1
         for ii, (hts,pts) in enumerate(zip(h_array,f_array)):
             f = hts.f
@@ -211,6 +219,20 @@ def do_analysis(data, t_init=[0.01,0.05], t_fin=0.1, tsust=0.1,impedance=True):
         res['{}_abs_trans'.format(rts.label)]=rts.percentile(50,from_time=t_trans_start, to_time=t_trans_end)
         res['{}_abs_trans_var'.format(rts.label)]=np.diff(rts.percentile([25,75],from_time=t_trans_start, to_time=t_trans_end))[0]
         res['{}_abs_fin'.format(rts.label)]=rts.v[-1]
+
+        ats = (harg['vt'][ii] - harg['b'][ii])
+        ats.label = f'arat{hts.label[1:]}'
+        res['{}_arg_sus'.format(ats.label)]=np.mod(ats.percentile(50,from_time=fts.t[-1]-tsust),2*np.pi)
+        res['{}_arg_sus_var'.format(ats.label)]=np.diff(ats.percentile([25,75],from_time=fts.t[-1]-tsust))[0]
+        res['{}_arg_trans'.format(ats.label)]=np.mod(ats.percentile(50,from_time=t_trans_start, to_time=t_trans_end),2*np.pi)
+        res['{}_arg_trans_var'.format(ats.label)]=np.diff(ats.percentile([25,75],from_time=t_trans_start, to_time=t_trans_end))[0]
+        tt,xx = ats.times_values_in_range(from_time=t_trans_start,to_time=t_trans_end)
+        try:
+            pp = np.polyfit(tt,xx,1)
+        except ValueError:
+            pp = [np.nan, np.nan]
+        res[f'{ats.label}_arg_trans_trend'] = pp[0]
+        res['{}_arg_fin'.format(rts.label)] = ats.v[-1]
         if data['pert_time']>1e-4:
             res['{}_abs_pert'.format(rts.label)]=rts[data['pert_time']]
         else:
@@ -250,6 +272,8 @@ def do_analysis(data, t_init=[0.01,0.05], t_fin=0.1, tsust=0.1,impedance=True):
                 traceback.print_exc()
                 continue
             res[f'{label}_jump'] = np.max(ypred-ytrue)
+            res[f'{label}_jump_val'] = hbl1[res['pert_time']]
+            res[f'{label}_jump_extrap'] = np.interp(res['pert_time'],xpred,ypred)
             res[f'{label}_t_before_jump'] = xpred[np.argmax(ypred-ytrue)]
     
     # impedance peaks

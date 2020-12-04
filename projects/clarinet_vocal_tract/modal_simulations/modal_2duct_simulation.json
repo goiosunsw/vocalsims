@@ -1,33 +1,33 @@
 {
     "description": "Reed simulation with modal tracts and reed dynamics and non-linear reed force var gamma",
     "version": "20201026",
-    "db": "modal-vt-bore-jumps-2",
+    "db": "modal-vt-bore-human-1",
     "tmax": 0.5,
     "gamma": {
         "sustain_val": {
             "_value": 0.5,
-            "_range": [0.3, 1.2]
+            "_range": [0.3, 0.9]
         },
         "time_const": 0.05,
         "exp_limit_multiplier": 1.1
     },
-    "zeta": 0.5,
+    "zeta": {
+        "_value": 0.5,
+        "_range": [0.2,0.8]
+    },
     "reed": {
         "frequency": {
             "_value": 1500,
-            "_range": [500, 4000]
+            "_range": [500, 2000]
         },
         "q": {
             "_value": 0.7,
             "_range": [0.5, 5.0]
         },
-        "amplitude": { "_link": "reed/q" }
+        "amplitude": 1.0
     },
     "bore": {
-        "frequencies": [{
-            "_value": 220,
-            "_range": [150, 800]
-        }],
+        "frequencies": [600],
         "qs": [{
             "_value": 25,
             "_range": [10, 35]
@@ -35,9 +35,15 @@
         "amplitudes": [{ "_link": "bore/qs/0" }]
     },
     "vocal": {
-        "frequencies": [500],
-        "qs": [15],
-        "amplitudes": [15]
+        "frequencies": [{
+            "_value": 500,
+            "_range": [500, 800]
+        }],
+        "qs": [{
+            "_value": 10,
+            "_range": [5, 20]
+        }],
+        "amplitudes": [{ "_range": [1,20] }]
     },
     "nlfunc": {
         "type": "parabolic",
@@ -47,8 +53,8 @@
     "perturbation": {
         "multiplier": 1.1,
         "duration": {
-            "_value": 1.0,
-            "_range": [0.2, 2.5]
+            "_value": 0.001,
+            "_range": [0.0001, 0.01]
         }
     }
 }
